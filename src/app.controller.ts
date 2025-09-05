@@ -17,8 +17,21 @@ import authController from "./modules/auth/auth.controller";
 import userController from "./modules/user/user.controller";
 
 //
-import { globalErrorHandling } from "./utils/response/error.response";
+import { promisify } from "node:util";
+import { pipeline } from "node:stream";
+const createS3WriteStreamPipe = promisify(pipeline);
+//
+import {
+    BadRequestException,
+    globalErrorHandling,
+} from "./utils/response/error.response";
 import { connectDB } from "./DB/connection.db";
+import {
+    createGetPreSignedLink,
+    deleteFile,
+    getFile,
+} from "./utils/multer/s3.config";
+import { string } from "zod";
 
 // handle base rate limiting
 const limiter = rateLimit({
@@ -45,6 +58,66 @@ const bootstrap = async (): Promise<void> => {
     app.get("/", (req: Request, res: Response) => {
         res.send("Hello World! , SOCIAL APP 😊");
     });
+
+    // AWS
+    app.get("/test", async (req: Request, res: Response): Promise<Response> => {
+        const { Key } = req.query as { Key: string };
+        const result = await deleteFile({
+            Key: Key as string,
+        });
+        return res.json({ message: "Done", data: { result } });
+    });
+    app.get(
+        "/upload/pre-signed/*path",
+        async (req: Request, res: Response): Promise<Response> => {
+            const { downloadName, download } = req.query as {
+                downloadName?: string;
+                download?: string;
+            };
+
+            const { path } = req.params as unknown as { path: string[] };
+            const Key = path.join("/");
+            const url = await createGetPreSignedLink({
+                Key: Key as string,
+                downloadName: downloadName as string,
+                download: download as string,
+            });
+            return res.json({ message: "Done", data: { url } });
+        }
+    );
+    app.get(
+        "/upload/*path",
+        async (req: Request, res: Response): Promise<void> => {
+            const { downloadName, download } = req.query as {
+                downloadName?: string;
+                download?: string;
+            };
+            const { path } = req.params as unknown as { path: string[] };
+            const Key = path.join("/");
+            const s3Response = await getFile({ Key });
+            if (!s3Response.Body) {
+                throw new BadRequestException("Fail to fetch this data");
+            }
+            res.setHeader(
+                "Content-type",
+                `${s3Response.ContentType || "application/octet-stream"}`
+            );
+            if (download === "true") {
+                // download=true&downloadName=sohail.jpg
+                res.setHeader(
+                    "Content-Disposition",
+                    `attachment; filename="${
+                        downloadName || Key.split("/").pop()
+                    }"`
+                );
+            }
+
+            return await createS3WriteStreamPipe(
+                s3Response.Body as NodeJS.ReadableStream,
+                res
+            );
+        }
+    );
     // app models
     app.use("/auth", authController);
     app.use("/user", userController);

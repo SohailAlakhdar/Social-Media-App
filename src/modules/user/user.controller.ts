@@ -5,8 +5,33 @@ import userService from "./user.service";
 import * as validators from "./user.validation";
 import { validation } from "./../../middlewares/validation.middleware";
 import { tokenEnum } from "../../utils/security/token.security";
+import {
+    cloudFileUpload,
+    fileValidation,
+    storageEnum,
+} from "../../utils/multer/cloude.multer";
 
 router.get("/", authentication(), userService.profile);
+
+router.patch(
+    "/profile-image",
+    authentication(),
+    // cloudFileUpload({
+    //     validation: fileValidation.image,
+    //     storageApproch: storageEnum.memory,
+    // }).single("image"),
+    userService.profileImage
+);
+router.patch(
+    "/profile-cover-image",
+    authentication(),
+    cloudFileUpload({
+        validation: fileValidation.image,
+        storageApproch: storageEnum.disk,
+        
+    }).array("images", 2),
+    userService.profileCoverImage
+);
 // logout
 router.post(
     "/logout",
@@ -19,7 +44,5 @@ router.get(
     authentication(tokenEnum.refresh),
     userService.refreshToken
 );
-
-
 
 export default router;

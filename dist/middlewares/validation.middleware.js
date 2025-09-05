@@ -11,7 +11,6 @@ const validation = (schema) => (req, res, next) => {
         const validationResult = schema[key].safeParse(req[key]);
         if (!validationResult.success) {
             const errors = validationResult.error.flatten();
-            // console.log(errors);
             throw new error_response_1.BadRequestException("Validation failed", {
                 fieldErrors: errors.fieldErrors,
                 formErrors: errors.formErrors,

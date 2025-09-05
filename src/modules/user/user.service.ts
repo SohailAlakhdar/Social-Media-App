@@ -12,22 +12,60 @@ import { HUserDocument, IUser, UserModel } from "../../DB/model/User.model";
 // import { TokenModel } from "./../../DB/model/Token.model";
 import { BadRequestException } from "../../utils/response/error.response";
 import { JwtPayload } from "jsonwebtoken";
+import {
+    cretePreSignedUploadLink,
+    uploadFile,
+    uploadFiles,
+} from "../../utils/multer/s3.config";
+import { storageEnum } from "../../utils/multer/cloude.multer";
 
 export class UserService {
     private userModel = new userRepository(UserModel);
     // private tokenModel = new tokenRepository(TokenModel);
     constructor() {}
 
-    profile = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ): Promise<Response> => {
+    profile = async (req: Request, res: Response): Promise<Response> => {
         return res.json({
             message: "Done",
             data: {
                 user: req.user,
                 decoded: req.decoded,
+            },
+        });
+    };
+    profileImage = async (req: Request, res: Response): Promise<Response> => {
+        // const Key = await uploadFile({
+        //     storageApproch: storageEnum.memory,
+        //     file: req.file as Express.Multer.File,
+        //     path: `users/${req.decoded?._id}`,
+        // });
+        const {
+            ContentType,
+            originalname,
+        }: { ContentType: string; originalname: string } = req.body;
+        const { url, key } = await cretePreSignedUploadLink({
+            ContentType,
+            originalname,
+            path: `users/${req.decoded?._id}`,
+        });
+        return res.json({
+            message: "Done",
+            data: {url , key},
+        });
+    };
+    profileCoverImage = async (
+        req: Request,
+        res: Response
+    ): Promise<Response> => {
+        const urls = await uploadFiles({
+            storageApproch: storageEnum.disk,
+            files: req.files as Express.Multer.File[],
+            path: `users/${req.decoded?._id}`,
+        });
+        return res.json({
+            message: "Done",
+            data: {
+                urls,
             },
         });
     };

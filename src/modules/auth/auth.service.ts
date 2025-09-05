@@ -128,7 +128,7 @@ class AuthService {
         if (!userExist) {
             throw new BadRequestException("Invalid Account");
         }
-        if (!(await compareHash(otp, userExist.confirmEmailOtp as string))) {
+        if (!(await compareHash(otp, userExist.confirmEmailOtp ))) {
             throw new ConflictException("Invalid OTP");
         }
 

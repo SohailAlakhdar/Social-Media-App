@@ -5,15 +5,42 @@ const token_security_1 = require("../../utils/security/token.security");
 const user_repository_1 = require("../../DB/repository/user.repository");
 const User_model_1 = require("../../DB/model/User.model");
 const error_response_1 = require("../../utils/response/error.response");
+const s3_config_1 = require("../../utils/multer/s3.config");
+const cloude_multer_1 = require("../../utils/multer/cloude.multer");
 class UserService {
     userModel = new user_repository_1.userRepository(User_model_1.UserModel);
     constructor() { }
-    profile = async (req, res, next) => {
+    profile = async (req, res) => {
         return res.json({
             message: "Done",
             data: {
                 user: req.user,
                 decoded: req.decoded,
+            },
+        });
+    };
+    profileImage = async (req, res) => {
+        const { ContentType, originalname, } = req.body;
+        const { url, key } = await (0, s3_config_1.cretePreSignedUploadLink)({
+            ContentType,
+            originalname,
+            path: `users/${req.decoded?._id}`,
+        });
+        return res.json({
+            message: "Done",
+            data: { url, key },
+        });
+    };
+    profileCoverImage = async (req, res) => {
+        const urls = await (0, s3_config_1.uploadFiles)({
+            storageApproch: cloude_multer_1.storageEnum.disk,
+            files: req.files,
+            path: `users/${req.decoded?._id}`,
+        });
+        return res.json({
+            message: "Done",
+            data: {
+                urls,
             },
         });
     };

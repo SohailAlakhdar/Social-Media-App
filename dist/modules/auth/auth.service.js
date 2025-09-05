@@ -32,7 +32,7 @@ class AuthService {
                 lean: true,
             },
         });
-        // console.log(userExist);
+        console.log(userExist);
         if (userExist) {
             throw new error_response_1.ConflictException("Email exists");
         }

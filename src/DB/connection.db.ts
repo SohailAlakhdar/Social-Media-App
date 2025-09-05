@@ -7,7 +7,7 @@ export const connectDB = async() =>{
             serverSelectionTimeoutMS:30000,
         })
         // UserModel.syncIndexes();
-        // console.log(result.models);
+        console.log(result.models);
         console.log("Database connected 👌")
     } catch (error) {
         console.error("Database connection failed ❌", error)
