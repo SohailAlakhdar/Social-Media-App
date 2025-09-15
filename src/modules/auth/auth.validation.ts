@@ -51,7 +51,7 @@ export const forgotPassword = {
         email: generalFields.email,
     }),
 };
-export const verfiyForgotPassword = {
+export const verifyForgotPassword  = {
     body: z.strictObject({
         email: generalFields.email,
         otp: generalFields.otp,
@@ -67,7 +67,7 @@ export const resetPassword = {
         })
         .refine((data) => {
             return (data.password !== data.confirmPassword) ? {
-                message: "password doesnot mismatch",
+                message: "password doesn't mismatch",
                 path: ["confirmPassword"],
             } : null;
         }),

@@ -2,13 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserService = void 0;
 const token_security_1 = require("../../utils/security/token.security");
-const user_repository_1 = require("../../DB/repository/user.repository");
+const User_repository_1 = require("../../DB/repository/User.repository");
 const User_model_1 = require("../../DB/model/User.model");
 const error_response_1 = require("../../utils/response/error.response");
 const s3_config_1 = require("../../utils/multer/s3.config");
-const cloude_multer_1 = require("../../utils/multer/cloude.multer");
+const cloud_multer_1 = require("../../utils/multer/cloud.multer");
 class UserService {
-    userModel = new user_repository_1.userRepository(User_model_1.UserModel);
+    userModel = new User_repository_1.UserRepository(User_model_1.UserModel);
     constructor() { }
     profile = async (req, res) => {
         return res.json({
@@ -21,7 +21,7 @@ class UserService {
     };
     profileImage = async (req, res) => {
         const { ContentType, originalname, } = req.body;
-        const { url, key } = await (0, s3_config_1.cretePreSignedUploadLink)({
+        const { url, key } = await (0, s3_config_1.createPreSignedUploadLink)({
             ContentType,
             originalname,
             path: `users/${req.decoded?._id}`,
@@ -33,7 +33,7 @@ class UserService {
     };
     profileCoverImage = async (req, res) => {
         const urls = await (0, s3_config_1.uploadFiles)({
-            storageApproch: cloude_multer_1.storageEnum.disk,
+            storageApproach: cloud_multer_1.storageEnum.disk,
             files: req.files,
             path: `users/${req.decoded?._id}`,
         });

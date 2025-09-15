@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cretePreSignedUploadLink = exports.uploadFiles = exports.uploadLargeFile = exports.uploadFile = exports.s3Config = void 0;
-const cloude_multer_1 = require("./cloude.multer");
+exports.deleteFiles = exports.deleteFile = exports.getFile = exports.createGetPreSignedLink = exports.createPreSignedUploadLink = exports.uploadFiles = exports.uploadLargeFile = exports.uploadFile = exports.s3Config = void 0;
+const cloud_multer_1 = require("./cloud.multer");
 const client_s3_1 = require("@aws-sdk/client-s3");
 const fs_1 = require("fs");
 const uuid_1 = require("uuid");
@@ -18,12 +18,12 @@ const s3Config = () => {
     });
 };
 exports.s3Config = s3Config;
-const uploadFile = async ({ storageApproch = cloude_multer_1.storageEnum.memory, Bucket = process.env.AWS_BUCKET_NAME, ACL = "private", path = "general", file, }) => {
+const uploadFile = async ({ storageApproach = cloud_multer_1.storageEnum.memory, Bucket = process.env.AWS_BUCKET_NAME, ACL = "private", path = "general", file, }) => {
     const command = new client_s3_1.PutObjectCommand({
         Bucket,
         ACL,
         Key: `${process.env.APP_NAME}/${path}/${(0, uuid_1.v4)()}_${file.originalname}`,
-        Body: storageApproch === cloude_multer_1.storageEnum.memory
+        Body: storageApproach === cloud_multer_1.storageEnum.memory
             ? file.buffer
             : (0, fs_1.createReadStream)(file.path),
         ContentType: file.mimetype,
@@ -35,14 +35,14 @@ const uploadFile = async ({ storageApproch = cloude_multer_1.storageEnum.memory,
     return command.input.Key;
 };
 exports.uploadFile = uploadFile;
-const uploadLargeFile = async ({ storageApproch = cloude_multer_1.storageEnum.disk, Bucket = process.env.AWS_BUCKET_NAME, ACL = "private", path = "general", file, }) => {
+const uploadLargeFile = async ({ storageApproach = cloud_multer_1.storageEnum.disk, Bucket = process.env.AWS_BUCKET_NAME, ACL = "private", path = "general", file, }) => {
     const upload = new lib_storage_1.Upload({
         client: (0, exports.s3Config)(),
         params: {
             Bucket,
             ACL,
             Key: `${process.env.APP_NAME}/${path}/${(0, uuid_1.v4)()}_${file.originalname}`,
-            Body: storageApproch === cloude_multer_1.storageEnum.memory
+            Body: storageApproach === cloud_multer_1.storageEnum.memory
                 ? file.buffer
                 : (0, fs_1.createReadStream)(file.path),
             ContentType: file.mimetype,
@@ -58,7 +58,7 @@ const uploadLargeFile = async ({ storageApproch = cloude_multer_1.storageEnum.di
     return Key;
 };
 exports.uploadLargeFile = uploadLargeFile;
-const uploadFiles = async ({ storageApproch = cloude_multer_1.storageEnum.memory, Bucket = process.env.AWS_BUCKET_NAME, ACL = "private", path = "general", files, useLarge = false, }) => {
+const uploadFiles = async ({ storageApproach = cloud_multer_1.storageEnum.memory, Bucket = process.env.AWS_BUCKET_NAME, ACL = "private", path = "general", files, useLarge = false, }) => {
     let urls = [];
     if (useLarge) {
         urls = await Promise.all(files.map((file) => {
@@ -67,7 +67,7 @@ const uploadFiles = async ({ storageApproch = cloude_multer_1.storageEnum.memory
                 ACL,
                 path,
                 file,
-                storageApproch,
+                storageApproach,
             });
         }));
     }
@@ -78,14 +78,14 @@ const uploadFiles = async ({ storageApproch = cloude_multer_1.storageEnum.memory
                 ACL,
                 path,
                 file,
-                storageApproch,
+                storageApproach,
             });
         }));
     }
     return urls;
 };
 exports.uploadFiles = uploadFiles;
-const cretePreSignedUploadLink = async ({ Bucket = process.env.AWS_BUCKET_NAME, path = "general", expiresIn = 120, ContentType, originalname, }) => {
+const createPreSignedUploadLink = async ({ Bucket = process.env.AWS_BUCKET_NAME, path = "general", expiresIn = 120, ContentType, originalname, }) => {
     const command = new client_s3_1.PutObjectCommand({
         Bucket,
         Key: `${process.env.APP_NAME}/${path}/${(0, uuid_1.v4)()}_pre_${originalname}`,
@@ -93,8 +93,47 @@ const cretePreSignedUploadLink = async ({ Bucket = process.env.AWS_BUCKET_NAME, 
     });
     const url = await (0, s3_request_presigner_1.getSignedUrl)((0, exports.s3Config)(), command, { expiresIn });
     if (!url || !command?.input?.Key) {
-        throw new error_response_1.BadRequestException("Fial to create pre sign url");
+        throw new error_response_1.BadRequestException("Fail to create pre sign url");
     }
     return { url, key: command.input.Key };
 };
-exports.cretePreSignedUploadLink = cretePreSignedUploadLink;
+exports.createPreSignedUploadLink = createPreSignedUploadLink;
+const createGetPreSignedLink = async ({ Bucket = process.env.AWS_BUCKET_NAME, Key, path = "general", expiresIn = 120, downloadName = "dummy", download = "false", }) => {
+    const command = new client_s3_1.GetObjectCommand({
+        Bucket,
+        Key,
+        ResponseContentDisposition: download === "true"
+            ? `attachment; filename="${downloadName || Key.split("/").pop()}"`
+            : undefined,
+    });
+    const url = await (0, s3_request_presigner_1.getSignedUrl)((0, exports.s3Config)(), command, { expiresIn });
+    if (!url || !command?.input?.Key) {
+        throw new error_response_1.BadRequestException("Fial to create pre sign url");
+    }
+    return url;
+};
+exports.createGetPreSignedLink = createGetPreSignedLink;
+const getFile = async ({ Key, Bucket = process.env.AWS_BUCKET_NAME, }) => {
+    const command = new client_s3_1.GetObjectCommand({
+        Key,
+        Bucket,
+    });
+    return await (0, exports.s3Config)().send(command);
+};
+exports.getFile = getFile;
+const deleteFile = async ({ Key, Bucket = process.env.AWS_BUCKET_NAME, }) => {
+    const command = new client_s3_1.DeleteObjectCommand({
+        Key,
+        Bucket,
+    });
+    return await (0, exports.s3Config)().send(command);
+};
+exports.deleteFile = deleteFile;
+const deleteFiles = async ({ Key, Bucket = process.env.AWS_BUCKET_NAME, }) => {
+    const command = new client_s3_1.DeleteObjectsCommand({
+        Key,
+        Bucket,
+    });
+    return await (0, exports.s3Config)().send(command);
+};
+exports.deleteFiles = deleteFiles;

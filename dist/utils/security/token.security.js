@@ -6,7 +6,7 @@ const uuid_1 = require("uuid");
 const User_model_1 = require("./../../DB/model/User.model");
 const jsonwebtoken_1 = require("jsonwebtoken");
 const error_response_1 = require("../response/error.response");
-const user_repository_1 = require("../../DB/repository/user.repository");
+const User_repository_1 = require("../../DB/repository/User.repository");
 const Token_repository_1 = require("../../DB/repository/Token.repository");
 var signatureLevelEnum;
 (function (signatureLevelEnum) {
@@ -93,8 +93,8 @@ const createLoginCredentials = async (user) => {
 };
 exports.createLoginCredentials = createLoginCredentials;
 const decodedToken = async ({ authorization, tokenType = tokenEnum.access, }) => {
-    const userModel = new user_repository_1.userRepository(User_model_1.UserModel);
-    const tokenModel = new Token_repository_1.tokenRepository(Token_model_1.TokenModel);
+    const userModel = new User_repository_1.UserRepository(User_model_1.UserModel);
+    const tokenModel = new Token_repository_1.TokenRepository(Token_model_1.TokenModel);
     const [BearerKey, token] = authorization.split(" ");
     if (!BearerKey || !token) {
         throw new error_response_1.UnAuthorizedException("Mising token parts");
@@ -126,7 +126,7 @@ const decodedToken = async ({ authorization, tokenType = tokenEnum.access, }) =>
 };
 exports.decodedToken = decodedToken;
 const createRevokeToken = async (decoded) => {
-    const tokenModel = new Token_repository_1.tokenRepository(Token_model_1.TokenModel);
+    const tokenModel = new Token_repository_1.TokenRepository(Token_model_1.TokenModel);
     const [result] = (await tokenModel.create({
         data: [
             {

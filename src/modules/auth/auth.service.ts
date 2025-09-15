@@ -11,19 +11,22 @@ import {
     IGmail,
     IForgotPassword,
     IResetPassword,
-    IVerfiyForgotPassword,
+    IVerifyForgotPassword,
 } from "./auth.dto";
 import { providerEnum, UserModel } from "../../DB/model/User.model";
-import { userRepository } from "../../DB/repository/user.repository";
+// import { userRepository } from "../../DB/repository/user.repository";
 import { compareHash, generateHash } from "../../utils/security/hash.security";
 import { emailEvent } from "../../utils/event/email.event";
 import { generateOTP } from "../../utils/otp";
 import { createLoginCredentials } from "../../utils/security/token.security";
 import { OAuth2Client, type TokenPayload } from "google-auth-library";
+import { successResponse } from "../../utils/response/success.response";
+import { UserRepository } from "../../DB/repository/User.repository";
+import { ILoginResponse } from "./auth.entities";
 
 //
 class AuthService {
-    private userModel = new userRepository(UserModel);
+    private userModel = new UserRepository(UserModel);
     constructor() {}
 
     private async verifyGmailAccount(idToken: string): Promise<TokenPayload> {
@@ -40,11 +43,7 @@ class AuthService {
     }
 
     // Signup
-    signup = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ): Promise<Response> => {
+    signup = async (req: Request, res: Response): Promise<Response> => {
         let { username = "", email, password }: AuthSignupDto = req.body;
         const userExist = await this.userModel.findOne({
             filter: { email },
@@ -59,32 +58,23 @@ class AuthService {
             throw new ConflictException("Email exists");
         }
         const otp = generateOTP();
-        emailEvent.emit("ConfirmEmail", {
-            to: email,
-            subject: "Welcome to Our App",
-            text: `Hello ${username},\n\nThank you for signing up!`,
-            otp,
-        });
+
         const user = await this.userModel.createUser({
             data: [
                 {
                     username,
                     email,
-                    password: await generateHash(password),
-                    confirmEmailOtp: await generateHash(String(otp)),
+                    password: password,
+                    confirmEmailOtp: String(otp),
                 },
             ],
             options: { validateBeforeSave: true },
         });
-        return res.json({ message: "Signup successful", data: { user } });
+        return successResponse({ res, statusCode: 201, data: { user } });
     };
 
     // Login
-    login = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ): Promise<Response> => {
+    login = async (req: Request, res: Response): Promise<Response> => {
         let { email, password }: AuthLoginDto = req.body;
         if (!email || !password) {
             throw new BadRequestException("All fields are required");
@@ -92,6 +82,8 @@ class AuthService {
         const user = await this.userModel.findOne({
             filter: { email },
         });
+        console.log(user);
+
         if (!user) {
             throw new NotFoundException("Email is not found");
         }
@@ -102,18 +94,11 @@ class AuthService {
             throw new NotFoundException("Password is incorrect");
         }
         const credentials = await createLoginCredentials(user);
-        return res.json({
-            message: "Login successful",
-            data: { credentials },
-        });
+        return successResponse<ILoginResponse>({ res, data: { credentials } });
     };
 
     // Confirm-Email
-    confirmEmail = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ): Promise<Response> => {
+    confirmEmail = async (req: Request, res: Response): Promise<Response> => {
         let { email, otp }: AuthConfirmEmailDto = req.body;
         if (!email || !otp) {
             throw new BadRequestException("All fields are required");
@@ -128,7 +113,7 @@ class AuthService {
         if (!userExist) {
             throw new BadRequestException("Invalid Account");
         }
-        if (!(await compareHash(otp, userExist.confirmEmailOtp ))) {
+        if (!(await compareHash(otp, userExist.confirmEmailOtp))) {
             throw new ConflictException("Invalid OTP");
         }
 
@@ -140,10 +125,7 @@ class AuthService {
                 $unset: { confirmEmailOtp: 1 },
             },
         });
-        return res.json({
-            message: "Email confirmed successfully",
-            data: { user },
-        });
+        return successResponse({ res, data: { user } });
     };
 
     // Login-With-Google
@@ -163,10 +145,7 @@ class AuthService {
             throw new NotFoundException("NOt found User or not register");
         }
         const credentials = await createLoginCredentials(user);
-        return res.json({
-            message: "Done",
-            data: { credentials },
-        });
+        return successResponse<ILoginResponse>({ res, data: { credentials } });
     };
 
     // Signup-With-Google
@@ -211,7 +190,7 @@ class AuthService {
         }
 
         const credentials = await createLoginCredentials(newUser);
-        return res.status(201).json({ message: "Done", data: { credentials } });
+        return successResponse<ILoginResponse>({ res, data: { credentials } });
     };
 
     forgotPassword = async (req: Request, res: Response): Promise<Response> => {
@@ -242,16 +221,13 @@ class AuthService {
             text: `Hello ${user.username},\n\nYour OTP is ${otp}`,
             otp,
         });
-        return res.json({
-            message: "Done",
-            data: {},
-        });
+        return successResponse({ res });
     };
     verifyForgotPassword = async (
         req: Request,
         res: Response
     ): Promise<Response> => {
-        const { email, otp }: IVerfiyForgotPassword = req.body;
+        const { email, otp }: IVerifyForgotPassword = req.body;
         const user = await this.userModel.findOne({
             filter: {
                 email,
@@ -274,10 +250,7 @@ class AuthService {
         if (!result.matchedCount) {
             throw new BadRequestException("Fail to send reset code");
         }
-        return res.json({
-            message: "Done",
-            data: { user },
-        });
+        return successResponse({ res });
     };
     resetPassword = async (req: Request, res: Response): Promise<Response> => {
         const { email, otp, password, confirmPassword }: IResetPassword =
@@ -285,8 +258,8 @@ class AuthService {
         const user = await this.userModel.findOne({
             filter: {
                 email,
-                $unset:{resetPasswordToken:1},
-                changeCredentialsAt:new Date()
+                $unset: { resetPasswordToken: 1 },
+                changeCredentialsAt: new Date(),
             },
         });
         if (!user) {
@@ -308,10 +281,7 @@ class AuthService {
             throw new BadRequestException("Fail to reset password");
         }
 
-        return res.json({
-            message: "Done",
-            data: { user },
-        });
+        return successResponse({ res, data: { user } });
     };
 }
 

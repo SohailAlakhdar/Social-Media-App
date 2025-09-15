@@ -1,10 +1,11 @@
-import { IToken as TDocument} from './../model/Token.model';
+import { IToken as TDocument} from '../model/Token.model';
 import { FlattenMaps, HydratedDocument, Model } from "mongoose";
-import { databaseRepository } from "./database.repository";
+import { DatabaseRepository } from "./Database.repository";
 export type Lean<T> = HydratedDocument<FlattenMaps<T>>;
 //
-export class tokenRepository extends databaseRepository<TDocument> {
+export class TokenRepository extends DatabaseRepository<TDocument> {
     constructor(protected override readonly model: Model<TDocument>) {
         super(model);
     }
+
 }

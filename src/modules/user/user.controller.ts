@@ -9,7 +9,7 @@ import {
     cloudFileUpload,
     fileValidation,
     storageEnum,
-} from "../../utils/multer/cloude.multer";
+} from "../../utils/multer/cloud.multer";
 
 router.get("/", authentication(), userService.profile);
 
@@ -28,7 +28,7 @@ router.patch(
     cloudFileUpload({
         validation: fileValidation.image,
         storageApproch: storageEnum.disk,
-        
+
     }).array("images", 2),
     userService.profileCoverImage
 );

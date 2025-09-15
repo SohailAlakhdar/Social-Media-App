@@ -1,4 +1,4 @@
-import { storageEnum } from "./cloude.multer";
+import { storageEnum } from "./cloud.multer";
 import {
     DeleteObjectCommand,
     DeleteObjectCommandOutput,
@@ -27,13 +27,13 @@ export const s3Config = () => {
     });
 };
 export const uploadFile = async ({
-    storageApproch = storageEnum.memory,
+    storageApproach = storageEnum.memory,
     Bucket = process.env.AWS_BUCKET_NAME as string,
     ACL = "private", // "authenticated-read" | "public-read"
     path = "general",
     file,
 }: {
-    storageApproch?: storageEnum;
+    storageApproach?: storageEnum;
     Bucket?: string;
     ACL?: ObjectCannedACL;
     path: string;
@@ -44,7 +44,7 @@ export const uploadFile = async ({
         ACL, // Access Control List
         Key: `${process.env.APP_NAME}/${path}/${uuid()}_${file.originalname}`,
         Body:
-            storageApproch === storageEnum.memory
+            storageApproach === storageEnum.memory
                 ? file.buffer
                 : createReadStream(file.path),
         ContentType: file.mimetype, //"image/png"
@@ -57,13 +57,13 @@ export const uploadFile = async ({
 };
 
 export const uploadLargeFile = async ({
-    storageApproch = storageEnum.disk,
+    storageApproach = storageEnum.disk,
     Bucket = process.env.AWS_BUCKET_NAME,
     ACL = "private", // "authenticated-read" | "public-read"
     path = "general",
     file,
 }: {
-    storageApproch?: storageEnum;
+    storageApproach?: storageEnum;
     Bucket?: string;
     ACL?: ObjectCannedACL;
     path: string;
@@ -78,7 +78,7 @@ export const uploadLargeFile = async ({
                 file.originalname
             }`,
             Body:
-                storageApproch === storageEnum.memory
+                storageApproach === storageEnum.memory
                     ? file.buffer
                     : createReadStream(file.path),
             ContentType: file.mimetype,
@@ -96,14 +96,14 @@ export const uploadLargeFile = async ({
 
 // Upload-Files
 export const uploadFiles = async ({
-    storageApproch = storageEnum.memory,
+    storageApproach = storageEnum.memory,
     Bucket = process.env.AWS_BUCKET_NAME as string,
     ACL = "private", // "authenticated-read" | "public-read"
     path = "general",
     files,
     useLarge = false,
 }: {
-    storageApproch?: storageEnum;
+    storageApproach?: storageEnum;
     Bucket?: string;
     ACL?: ObjectCannedACL;
     path: string;
@@ -119,7 +119,7 @@ export const uploadFiles = async ({
                     ACL,
                     path,
                     file,
-                    storageApproch,
+                    storageApproach,
                 });
             })
         );
@@ -131,7 +131,7 @@ export const uploadFiles = async ({
                     ACL,
                     path,
                     file,
-                    storageApproch,
+                    storageApproach,
                 });
             })
         );
@@ -229,7 +229,6 @@ export const deleteFile = async ({
 export const deleteFiles = async ({
     Key,
     Bucket = process.env.AWS_BUCKET_NAME as string,
-    
 }: {
     Key: string;
     Bucket?: string;

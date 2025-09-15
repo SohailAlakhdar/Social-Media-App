@@ -13,9 +13,7 @@ import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 
 //  module routing
-import authController from "./modules/auth/auth.controller";
-import userController from "./modules/user/user.controller";
-
+import { authRouter, userRouter, postRouter } from "./modules";
 //
 import { promisify } from "node:util";
 import { pipeline } from "node:stream";
@@ -31,7 +29,8 @@ import {
     deleteFile,
     getFile,
 } from "./utils/multer/s3.config";
-import { string } from "zod";
+import { UserModel } from "./DB/model/User.model";
+import { UserRepository } from "./DB/repository/User.repository";
 
 // handle base rate limiting
 const limiter = rateLimit({
@@ -118,12 +117,35 @@ const bootstrap = async (): Promise<void> => {
             );
         }
     );
+
+    // Hooks
+    // async function test() {
+    //     try {
+    //         const userModel = new UserRepository(UserModel);
+    //         const user = await userModel.create({
+    //             data: [
+    //                 {
+    //                     username: "sohail alakhdar",
+    //                     email: `sohailalakhdar@gmail.com`,
+    //                     // email: `${Date.now()}@gmail.com`,
+    //                     password: "64565",
+    //                     confirmEmailOtp: "558888",
+    //                 },
+    //             ],
+    //         });
+    //         console.log({ result: user });
+    //     } catch (error) {
+    //         console.log(error);
+    //     }
+    // }
+    // test();
     // app models
-    app.use("/auth", authController);
-    app.use("/user", userController);
+    app.use("/auth", authRouter);
+    app.use("/user", userRouter);
+    app.use("/post", postRouter);
     // dummy
     app.use("/*dummy", (req: Request, res: Response) => {
-        res.status(404).json({ message: "Not Found ❌" });
+        res.status(404).json({ message: "Not Found this URL" });
     });
     // global-Error-haldling
     app.use(globalErrorHandling);

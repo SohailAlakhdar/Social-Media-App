@@ -7,7 +7,7 @@ export enum storageEnum {
     disk = "disk",
 }
 export const fileValidation = {
-    image: ["image/jpg", "image/jif", "image/png"],
+    image: ["image/jpg","image/jpeg", "image/jif", "image/png"],
 };
 
 export const cloudFileUpload = ({

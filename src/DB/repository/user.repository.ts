@@ -1,11 +1,11 @@
 import { FlattenMaps, HydratedDocument, Model } from "mongoose";
 import { IUser as TDocument } from "../model/User.model";
-import { databaseRepository } from "./database.repository";
+import { DatabaseRepository } from "./Database.repository";
 import { CreateOptions } from "mongoose";
 import { BadRequestException } from "../../utils/response/error.response";
 export type Lean<T> = HydratedDocument<FlattenMaps<T>>;
-// 
-export class userRepository extends databaseRepository<TDocument> {
+//
+export class UserRepository extends DatabaseRepository<TDocument> {
     constructor(protected override readonly model: Model<TDocument>) {
         super(model);
     }
@@ -21,6 +21,5 @@ export class userRepository extends databaseRepository<TDocument> {
             throw new BadRequestException("Error in creating user");
         }
         return user;
-        // this returns an array of created documents
     }
 }

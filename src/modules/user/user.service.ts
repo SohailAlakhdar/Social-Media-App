@@ -6,21 +6,20 @@ import {
     createRevokeToken,
     LogoutEnum,
 } from "../../utils/security/token.security";
-import { userRepository } from "../../DB/repository/user.repository";
+import { UserRepository } from "../../DB/repository/User.repository";
 import { HUserDocument, IUser, UserModel } from "../../DB/model/User.model";
 // import { tokenRepository } from "../../DB/repository/Token.repository";
 // import { TokenModel } from "./../../DB/model/Token.model";
 import { BadRequestException } from "../../utils/response/error.response";
 import { JwtPayload } from "jsonwebtoken";
 import {
-    cretePreSignedUploadLink,
-    uploadFile,
+    createPreSignedUploadLink,
     uploadFiles,
 } from "../../utils/multer/s3.config";
-import { storageEnum } from "../../utils/multer/cloude.multer";
+import { storageEnum } from "../../utils/multer/cloud.multer";
 
 export class UserService {
-    private userModel = new userRepository(UserModel);
+    private userModel = new UserRepository(UserModel);
     // private tokenModel = new tokenRepository(TokenModel);
     constructor() {}
 
@@ -43,14 +42,14 @@ export class UserService {
             ContentType,
             originalname,
         }: { ContentType: string; originalname: string } = req.body;
-        const { url, key } = await cretePreSignedUploadLink({
+        const { url, key } = await createPreSignedUploadLink({
             ContentType,
             originalname,
             path: `users/${req.decoded?._id}`,
         });
         return res.json({
             message: "Done",
-            data: {url , key},
+            data: { url, key },
         });
     };
     profileCoverImage = async (
@@ -58,7 +57,7 @@ export class UserService {
         res: Response
     ): Promise<Response> => {
         const urls = await uploadFiles({
-            storageApproch: storageEnum.disk,
+            storageApproach: storageEnum.disk,
             files: req.files as Express.Multer.File[],
             path: `users/${req.decoded?._id}`,
         });

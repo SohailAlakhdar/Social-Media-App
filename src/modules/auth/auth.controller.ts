@@ -10,7 +10,7 @@ router.patch("/confirm-email", validation(validators.confirmEmail), authService.
 router.post("/login", validation(validators.login), authService.login);
 
 router.patch("/forgot-password", validation(validators.forgotPassword), authService.forgotPassword);
-router.patch("/verfiy-forgot-password", validation(validators.verfiyForgotPassword), authService.verifyForgotPassword);
+router.patch("/verfiy-forgot-password", validation(validators.verifyForgotPassword), authService.verifyForgotPassword);
 router.patch("/reset-password", validation(validators.resetPassword), authService.resetPassword);
 
 router.post("/signup-with-google", validation(validators.signupWithGoogle), authService.signupWithGoogle);

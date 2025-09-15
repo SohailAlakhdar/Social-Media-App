@@ -45,7 +45,7 @@ router.post("/signup", (0, validation_middleware_1.validation)(validators.signup
 router.patch("/confirm-email", (0, validation_middleware_1.validation)(validators.confirmEmail), auth_service_1.default.confirmEmail);
 router.post("/login", (0, validation_middleware_1.validation)(validators.login), auth_service_1.default.login);
 router.patch("/forgot-password", (0, validation_middleware_1.validation)(validators.forgotPassword), auth_service_1.default.forgotPassword);
-router.patch("/verfiy-forgot-password", (0, validation_middleware_1.validation)(validators.verfiyForgotPassword), auth_service_1.default.verifyForgotPassword);
+router.patch("/verfiy-forgot-password", (0, validation_middleware_1.validation)(validators.verifyForgotPassword), auth_service_1.default.verifyForgotPassword);
 router.patch("/reset-password", (0, validation_middleware_1.validation)(validators.resetPassword), auth_service_1.default.resetPassword);
 router.post("/signup-with-google", (0, validation_middleware_1.validation)(validators.signupWithGoogle), auth_service_1.default.signupWithGoogle);
 router.post("/login-with-google", (0, validation_middleware_1.validation)(validators.LoginWithGoogle), auth_service_1.default.loginWithGoogle);

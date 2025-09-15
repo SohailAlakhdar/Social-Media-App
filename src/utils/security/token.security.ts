@@ -13,8 +13,8 @@ import {
     BadRequestException,
     UnAuthorizedException,
 } from "../response/error.response";
-import { userRepository } from "../../DB/repository/user.repository";
-import { tokenRepository } from "../../DB/repository/Token.repository";
+import { UserRepository } from "../../DB/repository/User.repository";
+import { TokenRepository } from "../../DB/repository/Token.repository";
 
 // user.role
 export enum signatureLevelEnum {
@@ -145,8 +145,8 @@ export const decodedToken = async ({
     authorization: string;
     tokenType?: tokenEnum;
 }) => {
-    const userModel = new userRepository(UserModel);
-    const tokenModel = new tokenRepository(TokenModel);
+    const userModel = new UserRepository(UserModel);
+    const tokenModel = new TokenRepository(TokenModel);
     const [BearerKey, token] = authorization.split(" ");
     if (!BearerKey || !token) {
         throw new UnAuthorizedException("Mising token parts");
@@ -167,7 +167,7 @@ export const decodedToken = async ({
     }
     const user = await userModel.findOne({
         filter: { _id: decoded._id },
-    });
+    }) ;
     if (!user) {
         throw new BadRequestException("Not Rigister Account");
     }
@@ -181,7 +181,7 @@ export const decodedToken = async ({
 };
 
 export const createRevokeToken = async (decoded: JwtPayload) => {
-    const tokenModel = new tokenRepository(TokenModel);
+    const tokenModel = new TokenRepository(TokenModel);
     const [result] =
         (await tokenModel.create({
             data: [
