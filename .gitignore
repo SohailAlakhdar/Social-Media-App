@@ -1,4 +1,5 @@
 node_modules/
-src/config
+config
 # dist/
 .env.environment
+.env.prodaction

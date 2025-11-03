@@ -3,14 +3,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const error_response_1 = require("../../utils/response/error.response");
 const User_model_1 = require("../../DB/model/User.model");
 const hash_security_1 = require("../../utils/security/hash.security");
-const email_event_1 = require("../../utils/event/email.event");
+const email_event_1 = require("../../utils/email/email.event");
 const otp_1 = require("../../utils/otp");
 const token_security_1 = require("../../utils/security/token.security");
 const google_auth_library_1 = require("google-auth-library");
 const success_response_1 = require("../../utils/response/success.response");
-const User_repository_1 = require("../../DB/repository/User.repository");
+const user_repository_1 = require("../../DB/repository/user.repository");
 class AuthService {
-    userModel = new User_repository_1.UserRepository(User_model_1.UserModel);
+    userModel = new user_repository_1.UserRepository(User_model_1.UserModel);
     constructor() { }
     async verifyGmailAccount(idToken) {
         const client = new google_auth_library_1.OAuth2Client();
@@ -25,7 +25,7 @@ class AuthService {
         return payload;
     }
     signup = async (req, res) => {
-        let { username = "", email, password } = req.body;
+        let { username = "", role, email, password } = req.body;
         const userExist = await this.userModel.findOne({
             filter: { email },
             select: "email",
@@ -33,7 +33,6 @@ class AuthService {
                 lean: true,
             },
         });
-        console.log(userExist);
         if (userExist) {
             throw new error_response_1.ConflictException("Email exists");
         }
@@ -45,6 +44,7 @@ class AuthService {
                     email,
                     password: password,
                     confirmEmailOtp: String(otp),
+                    role,
                 },
             ],
             options: { validateBeforeSave: true },
@@ -59,7 +59,6 @@ class AuthService {
         const user = await this.userModel.findOne({
             filter: { email },
         });
-        console.log(user);
         if (!user) {
             throw new error_response_1.NotFoundException("Email is not found");
         }
@@ -230,7 +229,7 @@ class AuthService {
         if (!result.matchedCount) {
             throw new error_response_1.BadRequestException("Fail to reset password");
         }
-        return (0, success_response_1.successResponse)({ res, data: { user } });
+        return (0, success_response_1.successResponse)({ res });
     };
 }
 exports.default = new AuthService();

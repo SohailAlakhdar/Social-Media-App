@@ -12,5 +12,7 @@ const tokenSchema = new mongoose_1.Schema({
     },
 }, {
     timestamps: true,
+    toObject: { virtuals: true },
+    toJSON: { virtuals: true },
 });
 exports.TokenModel = mongoose_1.models.token || (0, mongoose_1.model)("Token", tokenSchema);

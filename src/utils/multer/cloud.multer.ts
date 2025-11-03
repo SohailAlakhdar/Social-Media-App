@@ -1,13 +1,14 @@
 import multer, { FileFilterCallback } from "multer";
 import { BadRequestException } from "../response/error.response";
 import { Request } from "express";
-
+import os from "node:os";
+import { v4 as uuid } from "uuid";
 export enum storageEnum {
     memory = "memory",
     disk = "disk",
 }
 export const fileValidation = {
-    image: ["image/jpg","image/jpeg", "image/jif", "image/png"],
+    image: ["image/jpg", "image/jpeg", "image/jif", "image/png"],
 };
 
 export const cloudFileUpload = ({
@@ -22,7 +23,16 @@ export const cloudFileUpload = ({
     const storage =
         storageApproch === storageEnum.memory
             ? multer.memoryStorage()
-            : multer.diskStorage({});
+            : multer.diskStorage({
+                  destination: os.tmpdir(),
+                  filename: function (
+                      req: Request,
+                      file: Express.Multer.File,
+                      cb
+                  ) {
+                      cb(null, `${uuid()}_${file.originalname}`);
+                  },
+              });
     function fileFilter(
         req: Request,
         file: Express.Multer.File,

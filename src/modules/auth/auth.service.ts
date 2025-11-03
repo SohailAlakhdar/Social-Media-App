@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 import {
     BadRequestException,
     ConflictException,
@@ -14,14 +14,13 @@ import {
     IVerifyForgotPassword,
 } from "./auth.dto";
 import { providerEnum, UserModel } from "../../DB/model/User.model";
-// import { userRepository } from "../../DB/repository/user.repository";
 import { compareHash, generateHash } from "../../utils/security/hash.security";
-import { emailEvent } from "../../utils/event/email.event";
+import { emailEvent } from "../../utils/email/email.event";
 import { generateOTP } from "../../utils/otp";
 import { createLoginCredentials } from "../../utils/security/token.security";
 import { OAuth2Client, type TokenPayload } from "google-auth-library";
 import { successResponse } from "../../utils/response/success.response";
-import { UserRepository } from "../../DB/repository/User.repository";
+import { UserRepository } from "../../DB/repository/user.repository";
 import { ILoginResponse } from "./auth.entities";
 
 //
@@ -44,7 +43,7 @@ class AuthService {
 
     // Signup
     signup = async (req: Request, res: Response): Promise<Response> => {
-        let { username = "", email, password }: AuthSignupDto = req.body;
+        let { username = "", role, email, password }: AuthSignupDto = req.body;
         const userExist = await this.userModel.findOne({
             filter: { email },
             select: "email",
@@ -53,12 +52,10 @@ class AuthService {
                 // populate:[{path:"username"}],
             },
         });
-        console.log(userExist);
         if (userExist) {
             throw new ConflictException("Email exists");
         }
         const otp = generateOTP();
-
         const user = await this.userModel.createUser({
             data: [
                 {
@@ -66,6 +63,7 @@ class AuthService {
                     email,
                     password: password,
                     confirmEmailOtp: String(otp),
+                    role,
                 },
             ],
             options: { validateBeforeSave: true },
@@ -82,7 +80,7 @@ class AuthService {
         const user = await this.userModel.findOne({
             filter: { email },
         });
-        console.log(user);
+        // console.log(user);
 
         if (!user) {
             throw new NotFoundException("Email is not found");
@@ -96,7 +94,6 @@ class AuthService {
         const credentials = await createLoginCredentials(user);
         return successResponse<ILoginResponse>({ res, data: { credentials } });
     };
-
     // Confirm-Email
     confirmEmail = async (req: Request, res: Response): Promise<Response> => {
         let { email, otp }: AuthConfirmEmailDto = req.body;
@@ -193,6 +190,7 @@ class AuthService {
         return successResponse<ILoginResponse>({ res, data: { credentials } });
     };
 
+    // Forgot-Password
     forgotPassword = async (req: Request, res: Response): Promise<Response> => {
         const { email }: IForgotPassword = req.body;
         const user = await this.userModel.findOne({
@@ -223,6 +221,8 @@ class AuthService {
         });
         return successResponse({ res });
     };
+
+    // Verify-Forgot-Password
     verifyForgotPassword = async (
         req: Request,
         res: Response
@@ -252,6 +252,8 @@ class AuthService {
         }
         return successResponse({ res });
     };
+
+    // Reset-Password
     resetPassword = async (req: Request, res: Response): Promise<Response> => {
         const { email, otp, password, confirmPassword }: IResetPassword =
             req.body;
@@ -281,7 +283,7 @@ class AuthService {
             throw new BadRequestException("Fail to reset password");
         }
 
-        return successResponse({ res, data: { user } });
+        return successResponse({ res });
     };
 }
 

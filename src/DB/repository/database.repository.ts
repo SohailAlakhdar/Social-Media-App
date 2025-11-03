@@ -1,5 +1,6 @@
 import {
     DeleteResult,
+    FlattenMaps,
     HydratedDocument,
     Model,
     MongooseUpdateQueryOptions,
@@ -7,11 +8,14 @@ import {
     ProjectionType,
     QueryOptions,
     RootFilterQuery,
+    Types,
     UpdateQuery,
     UpdateWriteOpResult,
 } from "mongoose";
+
 import { CreateOptions } from "mongoose";
-import { Lean } from "./User.repository";
+
+export type Lean<T> = HydratedDocument<FlattenMaps<T>>;
 
 export abstract class DatabaseRepository<TDocument> {
     constructor(protected readonly model: Model<TDocument>) {}
@@ -22,8 +26,17 @@ export abstract class DatabaseRepository<TDocument> {
         options,
     }: {
         filter?: RootFilterQuery<TDocument>;
-        select?: ProjectionType<TDocument> | null;
-        options?: QueryOptions<TDocument> | null;
+        select?: ProjectionType<TDocument> | undefined;
+        options?:
+            | (QueryOptions<TDocument> & {
+                  populate?: PopulateOptions[];
+                  skip?: number;
+                  limit?: number;
+                  sort?: Record<string, 1 | -1>;
+                  lean?: boolean;
+                  cursor?: any;
+              })
+            | null;
     }): Promise<HydratedDocument<TDocument>[] | [] | Lean<TDocument>[]> {
         const dec = this.model.find(filter || {}).select(select || "");
         if (options?.populate) {
@@ -33,12 +46,59 @@ export abstract class DatabaseRepository<TDocument> {
             dec.lean(options.lean);
         }
         if (options?.skip) {
-            dec.lean(options.skip);
+            dec.skip(options.skip);
         }
         if (options?.limit) {
-            dec.lean(options.limit);
+            dec.limit(options.limit);
+        }
+        if (options?.sort) {
+            dec.sort(options.sort);
         }
         return dec.exec();
+    }
+    async paginate({
+        filter,
+        select,
+        options,
+        page = 1,
+        size = 5,
+    }: {
+        filter?: RootFilterQuery<TDocument>;
+        select?: ProjectionType<TDocument> | undefined;
+        options?: QueryOptions<TDocument> & {
+            populate?: PopulateOptions[];
+            sort?: Record<string, 1 | -1>;
+            lean?: boolean;
+        };
+        page?: any;
+        size?: any;
+    }): Promise<{
+        docs: HydratedDocument<TDocument>[] | Lean<TDocument>[];
+        totalDocs: number;
+        totalPages: number;
+        page: number;
+        size: number;
+    }> {
+        const skip = (page - 1) * size;
+        const dec = this.model.find(filter || {}).select(select || "");
+        if (options?.populate)
+            dec.populate(options.populate as PopulateOptions[]);
+        if (options?.lean) dec.lean(options.lean);
+        if (options?.sort) dec.sort(options.sort);
+        dec.skip(skip).limit(size);
+
+        const [docs, totalDocs] = await Promise.all([
+            dec.exec(),
+            this.model.countDocuments(filter),
+        ]);
+
+        return {
+            docs,
+            totalDocs,
+            totalPages: Math.ceil(totalDocs / size),
+            page,
+            size,
+        };
     }
     async findOne({
         filter,
@@ -64,9 +124,9 @@ export abstract class DatabaseRepository<TDocument> {
         data,
         options,
     }: {
-        data: Partial<TDocument>[];
+        data: Partial<TDocument>[] | [];
         options?: CreateOptions;
-    }): Promise<HydratedDocument<TDocument>[] | undefined> {
+    }): Promise<HydratedDocument<TDocument>[]> {
         return await this.model.create(data, options);
     }
     async insertMany({
@@ -89,12 +149,16 @@ export abstract class DatabaseRepository<TDocument> {
         // options?: QueryOptions<TDocument>;
         options?: MongooseUpdateQueryOptions<TDocument> | null;
     }): Promise<UpdateWriteOpResult> {
+        console.log({ ...update });
+        console.log({ update });
+        if (Array.isArray(update)) {
+            return await this.model.updateOne(filter || {}, update, options);
+        }
         return await this.model.updateOne(
-            filter,
+            filter || {},
             { ...update, $inc: { __v: 1 } },
             options
         );
-        // Promise<HydratedDocument<UpdateWriteOpResult<TDocument>> | null>
     }
     async findOneAndUpdate({
         filter,
@@ -103,14 +167,29 @@ export abstract class DatabaseRepository<TDocument> {
     }: {
         filter: RootFilterQuery<TDocument>;
         update: UpdateQuery<TDocument>;
-        options?: MongooseUpdateQueryOptions<TDocument> | null;
-    }): Promise<HydratedDocument<TDocument> | null> {
+        options?: QueryOptions<TDocument> | null;
+    }): Promise<HydratedDocument<TDocument> | Lean<TDocument> | null> {
         return await this.model.findOneAndUpdate(
             filter,
             { ...update, $inc: { __v: 1 } },
             options
         );
         // Promise<HydratedDocument<UpdateWriteOpResult<TDocument>> | null>
+    }
+    async findByIdAndUpdate({
+        id,
+        update,
+        options = { new: true },
+    }: {
+        id: Types.ObjectId;
+        update: UpdateQuery<TDocument>;
+        options?: QueryOptions<TDocument> | null;
+    }): Promise<HydratedDocument<TDocument> | Lean<TDocument> | null> {
+        return await this.model.findByIdAndUpdate(
+            id,
+            { ...update, $inc: { __v: 1 } },
+            options
+        );
     }
 
     async deleteOne({

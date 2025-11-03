@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserModel = exports.providerEnum = exports.RoleEnum = exports.GenderEnum = void 0;
 const mongoose_1 = require("mongoose");
 const hash_security_1 = require("../../utils/security/hash.security");
-const email_event_1 = require("../../utils/event/email.event");
+const email_event_1 = require("../../utils/email/email.event");
 var GenderEnum;
 (function (GenderEnum) {
     GenderEnum["male"] = "male";
@@ -13,6 +13,7 @@ var RoleEnum;
 (function (RoleEnum) {
     RoleEnum["user"] = "user";
     RoleEnum["admin"] = "admin";
+    RoleEnum["superAdmin"] = "super-admin";
 })(RoleEnum || (exports.RoleEnum = RoleEnum = {}));
 var providerEnum;
 (function (providerEnum) {
@@ -44,9 +45,15 @@ const UserSchema = new mongoose_1.Schema({
         enum: providerEnum,
         default: providerEnum.SYSTEM,
     },
+    freezedBy: { type: mongoose_1.Schema.Types.ObjectId },
     freezedAt: Date,
+    restoredBy: { type: mongoose_1.Schema.Types.ObjectId },
+    restoredAt: Date,
+    createdBy: { type: mongoose_1.Schema.Types.ObjectId },
+    friends: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "User" }],
     _plainOtp: { type: String },
     profileImage: { type: String },
+    tempProfileImage: { type: String },
     coverImage: [String],
 }, {
     timestamps: true,
@@ -83,7 +90,6 @@ UserSchema.post("save", async function (doc, next) {
 });
 UserSchema.pre(["find", "findOne"], async function (next) {
     const query = this.getQuery();
-    console.log({ query: query });
     if (query.paranoid === false) {
         this.setQuery({ ...query });
     }

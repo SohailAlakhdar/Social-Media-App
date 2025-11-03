@@ -19,6 +19,8 @@ const tokenSchema = new Schema<IToken>(
     },
     {
         timestamps: true,
+        toObject: { virtuals: true },
+        toJSON: { virtuals: true },
     }
 );
 export const TokenModel = models.token || model<IToken>("Token", tokenSchema);

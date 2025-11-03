@@ -13,8 +13,8 @@ import {
     BadRequestException,
     UnAuthorizedException,
 } from "../response/error.response";
-import { UserRepository } from "../../DB/repository/User.repository";
-import { TokenRepository } from "../../DB/repository/Token.repository";
+import { UserRepository } from "../../DB/repository/user.repository";
+import { TokenRepository } from "../../DB/repository/token.repository";
 
 // user.role
 export enum signatureLevelEnum {
@@ -61,13 +61,13 @@ export const verifyToken = async ({
     return verify(token, secret, options) as JwtPayload;
 };
 
-//  Bearer or System => User or Admin
+//  Bearer or System => User or Admin or SuperAdmin
 export const detectSignatureLevel = async (
     role: RoleEnum = RoleEnum.user
 ): Promise<signatureLevelEnum> => {
     let signatureLevel: signatureLevelEnum = signatureLevelEnum.Bearer;
     switch (role) {
-        case RoleEnum.admin:
+        case RoleEnum.admin || RoleEnum.superAdmin:
             signatureLevel = signatureLevelEnum.System;
             break;
         default:
@@ -167,7 +167,7 @@ export const decodedToken = async ({
     }
     const user = await userModel.findOne({
         filter: { _id: decoded._id },
-    }) ;
+    });
     if (!user) {
         throw new BadRequestException("Not Rigister Account");
     }

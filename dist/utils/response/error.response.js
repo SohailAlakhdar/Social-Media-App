@@ -53,8 +53,8 @@ class ForbiddenException extends ApplicationException {
 exports.ForbiddenException = ForbiddenException;
 const globalErrorHandling = (err, req, res, next) => {
     res.status(err.statusCode ? err.statusCode : 500).json({
-        err_message: err.message || "somthing went wrong",
-        err_stack: process.env.MOOD === "development" ? err.stack : undefined,
+        message: err.message || "somthing went wrong",
+        stack: process.env.MOOD === "development" ? err.stack : undefined,
         cause: err.cause,
     });
 };

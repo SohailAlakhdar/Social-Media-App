@@ -3,8 +3,9 @@ import { z } from "zod";
 import type { Request, Response, NextFunction } from "express";
 import type { ZodError, ZodType } from "zod";
 import { BadRequestException } from "../utils/response/error.response";
-import { AllowCommentsEnum, AvailabilityEnum } from "../DB/model/Post.mode";
 import { Types } from "mongoose";
+import { RoleEnum } from "../DB/model/User.model";
+
 type KeyReqType = keyof Request; // | "body"| "params"| "query"| "headers"
 type SchemaType = Partial<Record<KeyReqType, ZodType>>; // Record<key, ZodType>
 type ValidationErrorType = Array<{
@@ -20,18 +21,15 @@ export const validation =
         const validationErrors: ValidationErrorType = [];
         for (const key of Object.keys(schema) as KeyReqType[]) {
             if (!schema[key]) continue;
-            console.log({ body: req.body, file: req.file, files: req.files });
-
+            // console.log({ body: req.body, file: req.file, files: req.files });
             if (req.file) {
                 req.body.attachment = req.file;
             }
             if (req.files) {
                 req.body.attachments = req.files;
             }
-
             const validationResult = schema[key].safeParse(req[key]);
             if (!validationResult.success) {
-                // Format Zod errors to a friendly shape
                 const errors = validationResult.error as ZodError;
                 validationErrors.push({
                     key,
@@ -39,25 +37,20 @@ export const validation =
                         return { path: issue.path, message: issue.message };
                     }),
                 });
-                // console.log(errors);
-                // throw new BadRequestException("Validation failed", {
-                //     fieldErrors: errors.fieldErrors, // { email: ["..."], password: ["..."] }
-                //     formErrors: errors.formErrors, // e.g. refine-level errors
-                // });
             }
-            // why that?
             if (validationErrors.length > 0) {
                 throw new BadRequestException("Validation failed", {
                     errors: validationErrors,
                 });
             }
         }
-        // attach parsed/validated data to request (optional)
-        // req.body = validationResult.data;
         return next() as unknown as NextFunction;
     };
 
 export const generalFields = {
+    id: z.string().refine((val) => Types.ObjectId.isValid(val), {
+        message: "Invalid id format",
+    }),
     firstName: z.string(),
     lastName: z.string(),
     username: z
@@ -76,23 +69,8 @@ export const generalFields = {
     //     "Password must be at least 6 characters, include uppercase, lowercase, number, and special character"
     // ),
     confirmPassword: z.string(),
+    role: z.enum(RoleEnum).default(RoleEnum.user),
     otp: z.string().regex(/^\d{6}$/, "OTP must be 6 digits"),
-    // Post Module
-    content: z.string().min(2).max(50000).optional(),
-    // attachments: z.array(z.any()).max(2).optional(),
-    availability: z.enum(AvailabilityEnum).default(AvailabilityEnum.public),
-    allowComments: z.enum(AllowCommentsEnum).default(AllowCommentsEnum.allow),
-    tags: z
-        .array(
-            z.string().refine(
-                (data) => {
-                    return Types.ObjectId.isValid(data);
-                },
-                { error: "Invalid user Id" }
-            )
-        )
-        .max(10)
-        .optional(),
     file: function (mimetype: string[]) {
         return z
             .object({

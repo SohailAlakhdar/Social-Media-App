@@ -1,3 +1,4 @@
+import { deleteFile, deleteFiles, getFile } from "./utils/multer/s3.config";
 // Setup ENV
 import { resolve } from "path";
 import dotenv from "dotenv";
@@ -24,13 +25,18 @@ import {
     globalErrorHandling,
 } from "./utils/response/error.response";
 import { connectDB } from "./DB/connection.db";
+import { createGetPreSignedLink } from "./utils/multer/s3.config";
+import { successResponse } from "./utils/response/success.response";
+import { DeleteObjectsCommandOutput } from "@aws-sdk/client-s3";
+import { initializeIo } from "./modules/gateway/gateway";
+import { chatRoter } from "./modules/chat";
 import {
-    createGetPreSignedLink,
-    deleteFile,
-    getFile,
-} from "./utils/multer/s3.config";
-import { UserModel } from "./DB/model/User.model";
-import { UserRepository } from "./DB/repository/User.repository";
+    graphql,
+    GraphQLSchema,
+    GraphQLObjectType,
+    GraphQLString,
+} from "graphql";
+import { createHandler } from "graphql-http/lib/use/express";
 
 // handle base rate limiting
 const limiter = rateLimit({
@@ -40,16 +46,35 @@ const limiter = rateLimit({
         "Too many requests from this IP, please try again after 15 minutes",
     statusCode: 429,
 });
+
 // ========================
 const bootstrap = async (): Promise<void> => {
     const port: number | string = process.env.PORT || 3000;
     const app: Express = express();
 
+    // Global application middleware
     app.use(express.json()); // Parse JSON request bodies
     app.use(cors()); // Enable CORS
     app.use(helmet()); // For security headers
-    // Rate Limiting
-    app.use(limiter);
+    app.use(limiter); // Rate Limiting
+
+    // GraphQL
+    const schema = new GraphQLSchema({
+        query: new GraphQLObjectType({
+            name: "RootSchemaQueryType", // tracing error and unique identifier
+            description: "Optional TExt",
+            fields: {
+                Welcome: {
+                    type: GraphQLString,
+                    description: "this schema to say hello for you!!",
+                    resolve: (parent: unknown, args: any) => {
+                        return "Hello World";
+                    },
+                },
+            },
+        }),
+    });
+    app.all("/graphql", createHandler({ schema }));
 
     // DB
     await connectDB();
@@ -59,6 +84,7 @@ const bootstrap = async (): Promise<void> => {
     });
 
     // AWS
+    // Delet-File
     app.get("/test", async (req: Request, res: Response): Promise<Response> => {
         const { Key } = req.query as { Key: string };
         const result = await deleteFile({
@@ -66,42 +92,45 @@ const bootstrap = async (): Promise<void> => {
         });
         return res.json({ message: "Done", data: { result } });
     });
+    // Upload-pre-signed-url
     app.get(
         "/upload/pre-signed/*path",
         async (req: Request, res: Response): Promise<Response> => {
-            const { downloadName, download } = req.query as {
+            const { downloadName, downloadBoolean } = req.query as {
                 downloadName?: string;
-                download?: string;
+                downloadBoolean?: string;
             };
-
             const { path } = req.params as unknown as { path: string[] };
             const Key = path.join("/");
+            console.log({ KEY: Key });
             const url = await createGetPreSignedLink({
                 Key: Key as string,
                 downloadName: downloadName as string,
-                download: download as string,
+                downloadBoolean: downloadBoolean as string,
             });
             return res.json({ message: "Done", data: { url } });
         }
     );
+    // upload file
     app.get(
         "/upload/*path",
         async (req: Request, res: Response): Promise<void> => {
-            const { downloadName, download } = req.query as {
-                downloadName?: string;
-                download?: string;
-            };
+            const {
+                downloadName,
+                downloadBoolean,
+            }: { downloadName?: string; downloadBoolean?: string } = req.query;
             const { path } = req.params as unknown as { path: string[] };
             const Key = path.join("/");
             const s3Response = await getFile({ Key });
             if (!s3Response.Body) {
                 throw new BadRequestException("Fail to fetch this data");
             }
+            res.set("Cross-Origin-Resource-Policy", "cross-origin");
             res.setHeader(
                 "Content-type",
                 `${s3Response.ContentType || "application/octet-stream"}`
             );
-            if (download === "true") {
+            if (downloadBoolean === "true") {
                 // download=true&downloadName=sohail.jpg
                 res.setHeader(
                     "Content-Disposition",
@@ -117,32 +146,29 @@ const bootstrap = async (): Promise<void> => {
             );
         }
     );
+    // Delete Files
+    app.get(
+        "/delete/",
+        async (req: Request, res: Response): Promise<Response> => {
+            const result: DeleteObjectsCommandOutput = await deleteFiles({
+                urls: [
+                    "Route_Social_App/users/68c672b9b423b00ce8a46d0a/4c7f7e27-5316-439a-bf2e-e68dd70806d2_pre_ONE.jpg",
+                    "Route_Social_App/users/68c672b9b423b00ce8a46d0a/c08ecb4a-3ed7-46b5-972a-3b4a70772e24_pre_ONE.jpg",
+                ],
+                Quiet: true,
+            });
 
-    // Hooks
-    // async function test() {
-    //     try {
-    //         const userModel = new UserRepository(UserModel);
-    //         const user = await userModel.create({
-    //             data: [
-    //                 {
-    //                     username: "sohail alakhdar",
-    //                     email: `sohailalakhdar@gmail.com`,
-    //                     // email: `${Date.now()}@gmail.com`,
-    //                     password: "64565",
-    //                     confirmEmailOtp: "558888",
-    //                 },
-    //             ],
-    //         });
-    //         console.log({ result: user });
-    //     } catch (error) {
-    //         console.log(error);
-    //     }
-    // }
-    // test();
-    // app models
+            if (!result) {
+                throw new BadRequestException("Fail to fetch this data");
+            }
+            return successResponse({ res, data: { result } });
+        }
+    );
+
     app.use("/auth", authRouter);
     app.use("/user", userRouter);
     app.use("/post", postRouter);
+    app.use("/chat", chatRoter);
     // dummy
     app.use("/*dummy", (req: Request, res: Response) => {
         res.status(404).json({ message: "Not Found this URL" });
@@ -151,9 +177,13 @@ const bootstrap = async (): Promise<void> => {
     app.use(globalErrorHandling);
 
     // Server setup
-    app.listen(port, () => {
+    const httpServer = app.listen(port, () => {
         console.log(`Server is running on http://localhost:${port} 🚀`);
     });
+
+    console.log({ schema });
+
+    initializeIo(httpServer);
 };
 // export default bootstrap;
 export { bootstrap };

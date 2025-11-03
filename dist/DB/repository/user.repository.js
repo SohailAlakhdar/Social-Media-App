@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserRepository = void 0;
-const Database_repository_1 = require("./Database.repository");
+const database_repository_1 = require("./database.repository");
 const error_response_1 = require("../../utils/response/error.response");
-class UserRepository extends Database_repository_1.DatabaseRepository {
+class UserRepository extends database_repository_1.DatabaseRepository {
     model;
     constructor(model) {
         super(model);

@@ -6,13 +6,18 @@ import {
     DeleteObjectsCommandOutput,
     GetObjectCommand,
     GetObjectCommandOutput,
+    ListObjectsV2Command,
+    ListObjectsV2CommandOutput,
     ObjectCannedACL,
     PutObjectCommand,
     S3Client,
 } from "@aws-sdk/client-s3";
 import { createReadStream } from "fs";
 import { v4 as uuid } from "uuid";
-import { BadRequestException } from "../response/error.response";
+import {
+    BadRequestException,
+    NotFoundException,
+} from "../response/error.response";
 import { Upload } from "@aws-sdk/lib-storage";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -26,6 +31,8 @@ export const s3Config = () => {
         },
     });
 };
+
+// Upload-File
 export const uploadFile = async ({
     storageApproach = storageEnum.memory,
     Bucket = process.env.AWS_BUCKET_NAME as string,
@@ -56,8 +63,9 @@ export const uploadFile = async ({
     return command.input.Key;
 };
 
+// upload-Large-File
 export const uploadLargeFile = async ({
-    storageApproach = storageEnum.disk,
+    storageApproach = storageEnum.disk, // just disk
     Bucket = process.env.AWS_BUCKET_NAME,
     ACL = "private", // "authenticated-read" | "public-read"
     path = "general",
@@ -83,9 +91,13 @@ export const uploadLargeFile = async ({
                     : createReadStream(file.path),
             ContentType: file.mimetype,
         },
+        queueSize: 4, // number of concurrent uploads
+        partSize: 5 * 1024 * 1024, // 5 MB per part
+
+        leavePartsOnError: false,
     });
     upload.on("httpUploadProgress", (progress) => {
-        console.log(`upload file progress is === `, progress);
+        console.log(`Uploaded: ${progress.loaded} / ${progress.total}`);
     });
     const { Key } = await upload.done();
     if (!Key) {
@@ -94,7 +106,7 @@ export const uploadLargeFile = async ({
     return Key;
 };
 
-// Upload-Files
+// Upload-Files && upload-Large-Files
 export const uploadFiles = async ({
     storageApproach = storageEnum.memory,
     Bucket = process.env.AWS_BUCKET_NAME as string,
@@ -151,7 +163,7 @@ export const createPreSignedUploadLink = async ({
     expiresIn?: number;
     ContentType: string;
     originalname: string;
-}): Promise<{ url: string; key: string }> => {
+}): Promise<{ url: string; Key: string }> => {
     const command = new PutObjectCommand({
         Bucket,
         Key: `${process.env.APP_NAME}/${path}/${uuid()}_pre_${originalname}`,
@@ -161,42 +173,41 @@ export const createPreSignedUploadLink = async ({
     if (!url || !command?.input?.Key) {
         throw new BadRequestException("Fail to create pre sign url");
     }
-    return { url, key: command.input.Key };
+    return { url, Key: command.input.Key };
 };
 
+// Create-Get-Pre-Signed-link
 export const createGetPreSignedLink = async ({
     Bucket = process.env.AWS_BUCKET_NAME as string,
     Key,
-    path = "general",
     expiresIn = 120,
     downloadName = "dummy",
-    download = "false",
+    downloadBoolean = "false",
 }: {
     Bucket?: string;
-    path?: string;
     Key: string;
     downloadName?: string;
-    download?: string;
+    downloadBoolean?: string;
     expiresIn?: number;
 }): Promise<string> => {
     const command = new GetObjectCommand({
         Bucket,
         Key,
         ResponseContentDisposition:
-            download === "true"
+            downloadBoolean === "true"
                 ? `attachment; filename="${
                       downloadName || Key.split("/").pop()
                   }"`
                 : undefined,
     });
-    // const url = await getSignedUrl(s3Config(), command, { expiresIn });
     const url = await getSignedUrl(s3Config(), command, { expiresIn });
-    if (!url || !command?.input?.Key) {
+    if (!url) {
         throw new BadRequestException("Fial to create pre sign url");
     }
     return url;
 };
 
+// Get-File-----------------
 export const getFile = async ({
     Key,
     Bucket = process.env.AWS_BUCKET_NAME as string,
@@ -211,6 +222,7 @@ export const getFile = async ({
     return await s3Config().send(command);
 };
 
+// Delet-File--------------
 export const deleteFile = async ({
     Key,
     Bucket = process.env.AWS_BUCKET_NAME as string,
@@ -225,17 +237,68 @@ export const deleteFile = async ({
     return await s3Config().send(command);
 };
 
-// ----------
+// Delete-File-------------
 export const deleteFiles = async ({
-    Key,
+    urls,
+    Quiet = false,
     Bucket = process.env.AWS_BUCKET_NAME as string,
 }: {
-    Key: string;
+    urls: string[];
+    Quiet?: boolean;
     Bucket?: string;
 }): Promise<DeleteObjectsCommandOutput> => {
+    const Objects = urls.map((url) => {
+        return { Key: url };
+    });
+    console.log({ Objects: Objects });
+
     const command = new DeleteObjectsCommand({
-        Key,
         Bucket,
+        Delete: {
+            Objects,
+            Quiet, // to show less
+        },
     });
     return await s3Config().send(command);
+};
+
+// List files [-------------]
+export const listDirectoryFiles = async ({
+    Bucket = process.env.AWS_BUCKET_NAME as string,
+    path,
+}: {
+    Bucket?: string;
+    path: string;
+}): Promise<ListObjectsV2CommandOutput> => {
+    const command = new ListObjectsV2Command({
+        Bucket,
+        Prefix: `${process.env.APP_NAME}/${path}`,
+        // Prefix:` Route_Social_App/users/68c672b9b423b00ce8a46d0a`,
+    });
+    return await s3Config().send(command);
+};
+
+// Delete-Files-By-Prefix
+export const deleteFolderByPrefix = async ({
+    Bucket = process.env.AWS_BUCKET_NAME as string,
+    path,
+    Quiet = false,
+}: {
+    Bucket?: string;
+    path: string;
+    Quiet?: boolean;
+}): Promise<DeleteObjectCommandOutput> => {
+    const fileList = await listDirectoryFiles({
+        path: `user/68c672b9b423b00ce8a46d0a`,
+    });
+    if (!fileList?.Contents?.length) {
+        throw new BadRequestException("empty directory");
+    }
+    const urls: string[] = fileList.Contents.map((file) => {
+        return file.Key as string;
+    });
+    if (!urls) {
+        throw new NotFoundException("not found url ");
+    }
+    return await deleteFiles({ urls, Quiet, Bucket });
 };

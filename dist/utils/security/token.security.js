@@ -6,8 +6,8 @@ const uuid_1 = require("uuid");
 const User_model_1 = require("./../../DB/model/User.model");
 const jsonwebtoken_1 = require("jsonwebtoken");
 const error_response_1 = require("../response/error.response");
-const User_repository_1 = require("../../DB/repository/User.repository");
-const Token_repository_1 = require("../../DB/repository/Token.repository");
+const user_repository_1 = require("../../DB/repository/user.repository");
+const token_repository_1 = require("../../DB/repository/token.repository");
 var signatureLevelEnum;
 (function (signatureLevelEnum) {
     signatureLevelEnum["Bearer"] = "Bearer";
@@ -34,7 +34,7 @@ exports.verifyToken = verifyToken;
 const detectSignatureLevel = async (role = User_model_1.RoleEnum.user) => {
     let signatureLevel = signatureLevelEnum.Bearer;
     switch (role) {
-        case User_model_1.RoleEnum.admin:
+        case User_model_1.RoleEnum.admin || User_model_1.RoleEnum.superAdmin:
             signatureLevel = signatureLevelEnum.System;
             break;
         default:
@@ -93,8 +93,8 @@ const createLoginCredentials = async (user) => {
 };
 exports.createLoginCredentials = createLoginCredentials;
 const decodedToken = async ({ authorization, tokenType = tokenEnum.access, }) => {
-    const userModel = new User_repository_1.UserRepository(User_model_1.UserModel);
-    const tokenModel = new Token_repository_1.TokenRepository(Token_model_1.TokenModel);
+    const userModel = new user_repository_1.UserRepository(User_model_1.UserModel);
+    const tokenModel = new token_repository_1.TokenRepository(Token_model_1.TokenModel);
     const [BearerKey, token] = authorization.split(" ");
     if (!BearerKey || !token) {
         throw new error_response_1.UnAuthorizedException("Mising token parts");
@@ -126,7 +126,7 @@ const decodedToken = async ({ authorization, tokenType = tokenEnum.access, }) =>
 };
 exports.decodedToken = decodedToken;
 const createRevokeToken = async (decoded) => {
-    const tokenModel = new Token_repository_1.TokenRepository(Token_model_1.TokenModel);
+    const tokenModel = new token_repository_1.TokenRepository(Token_model_1.TokenModel);
     const [result] = (await tokenModel.create({
         data: [
             {

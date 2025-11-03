@@ -44,12 +44,22 @@ const validators = __importStar(require("./user.validation"));
 const validation_middleware_1 = require("./../../middlewares/validation.middleware");
 const token_security_1 = require("../../utils/security/token.security");
 const cloud_multer_1 = require("../../utils/multer/cloud.multer");
+const user_endPoints_1 = require("./user.endPoints");
+const chat_1 = require("../chat");
+router.use("/:userId/chat", chat_1.chatRoter);
 router.get("/", (0, authentication_middlewares_1.authentication)(), user_service_1.default.profile);
+router.get("/dashboard", (0, authentication_middlewares_1.authorization)(user_endPoints_1.endPoint.dashboard), user_service_1.default.dashboard);
+router.patch("/:userId/change-role", (0, authentication_middlewares_1.authorization)(user_endPoints_1.endPoint.changeRole), (0, validation_middleware_1.validation)(validators.changeRole), user_service_1.default.changeRole);
+router.post("/:userId/send-friend-request", (0, authentication_middlewares_1.authentication)(), (0, validation_middleware_1.validation)(validators.sendFriendRequest), user_service_1.default.sendFriendRequest);
+router.patch("/:requestId/accept-friend-request", (0, authentication_middlewares_1.authentication)(), (0, validation_middleware_1.validation)(validators.acceptFriendRequest), user_service_1.default.acceptFriendRequest);
 router.patch("/profile-image", (0, authentication_middlewares_1.authentication)(), user_service_1.default.profileImage);
 router.patch("/profile-cover-image", (0, authentication_middlewares_1.authentication)(), (0, cloud_multer_1.cloudFileUpload)({
     validation: cloud_multer_1.fileValidation.image,
     storageApproch: cloud_multer_1.storageEnum.disk,
 }).array("images", 2), user_service_1.default.profileCoverImage);
+router.delete("/freeze-account/{:userId}", (0, authentication_middlewares_1.authentication)(), (0, validation_middleware_1.validation)(validators.freezeAccount), user_service_1.default.freezeAccount);
+router.delete("/hard-delete-account/{:userId}", (0, authentication_middlewares_1.authorization)(user_endPoints_1.endPoint.hardDeleteAccount), (0, validation_middleware_1.validation)(validators.hardDeleteAccount), user_service_1.default.hardDeleteAccount);
+router.patch("/restore-account/{:userId}", (0, authentication_middlewares_1.authorization)(user_endPoints_1.endPoint.restoreAccount), (0, validation_middleware_1.validation)(validators.restoreAccount), user_service_1.default.restoreAccount);
 router.post("/logout", (0, authentication_middlewares_1.authentication)(), (0, validation_middleware_1.validation)(validators.LogoutSchema), user_service_1.default.Logout);
 router.get("/refresh-token", (0, authentication_middlewares_1.authentication)(token_security_1.tokenEnum.refresh), user_service_1.default.refreshToken);
 exports.default = router;

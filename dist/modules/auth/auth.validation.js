@@ -30,6 +30,7 @@ exports.signup = {
         .extend({
         username: validation_middleware_1.generalFields.username,
         confirmPassword: validation_middleware_1.generalFields.confirmPassword,
+        role: validation_middleware_1.generalFields.role,
     })
         .superRefine((data, ctx) => {
         if (data.password !== data.confirmPassword) {
@@ -61,9 +62,11 @@ exports.resetPassword = {
         confirmPassword: validation_middleware_1.generalFields.confirmPassword,
     })
         .refine((data) => {
-        return (data.password !== data.confirmPassword) ? {
-            message: "password doesn't mismatch",
-            path: ["confirmPassword"],
-        } : null;
+        return data.password !== data.confirmPassword
+            ? {
+                message: "password doesn't mismatch",
+                path: ["confirmPassword"],
+            }
+            : null;
     }),
 };

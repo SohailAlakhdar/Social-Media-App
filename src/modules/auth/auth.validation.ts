@@ -28,14 +28,11 @@ export const confirmEmail = {
 export const signup = {
     body: login.body
         .extend({
-            //  Or strictObject
-            // firstName:generalFields.firstName,
-            // lastName:generalFields.lastName,
             username: generalFields.username,
             confirmPassword: generalFields.confirmPassword,
+            role: generalFields.role,
         })
         .superRefine((data, ctx) => {
-            // ctx is ZodContext
             if (data.password !== data.confirmPassword) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -51,7 +48,7 @@ export const forgotPassword = {
         email: generalFields.email,
     }),
 };
-export const verifyForgotPassword  = {
+export const verifyForgotPassword = {
     body: z.strictObject({
         email: generalFields.email,
         otp: generalFields.otp,
@@ -66,12 +63,12 @@ export const resetPassword = {
             confirmPassword: generalFields.confirmPassword,
         })
         .refine((data) => {
-            return (data.password !== data.confirmPassword) ? {
-                message: "password doesn't mismatch",
-                path: ["confirmPassword"],
-            } : null;
+            return data.password !== data.confirmPassword
+                ? {
+                      message: "password doesn't mismatch",
+                      path: ["confirmPassword"],
+                  }
+                : null;
         }),
 };
 
-// export type LoginInput = z.infer<typeof login.body>;
-// export type SignupInput = z.infer<typeof signup.body>;

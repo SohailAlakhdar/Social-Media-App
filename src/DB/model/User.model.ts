@@ -1,6 +1,6 @@
 import { model, models, Schema, Types, HydratedDocument } from "mongoose";
 import { generateHash } from "../../utils/security/hash.security";
-import { emailEvent } from "../../utils/event/email.event";
+import { emailEvent } from "../../utils/email/email.event";
 export enum GenderEnum {
     male = "male",
     female = "female",
@@ -8,6 +8,7 @@ export enum GenderEnum {
 export enum RoleEnum {
     user = "user",
     admin = "admin",
+    superAdmin = "super-admin",
 }
 export enum providerEnum {
     GOOGLE = "GOOGLE",
@@ -39,11 +40,20 @@ export interface IUser {
     provider: providerEnum;
 
     profileImage?: string;
+    tempProfileImage?: string;
     coverImage?: string[];
 
-    createdAt: Date;
-    updatedAt?: Date;
+    restoredBy?: Types.ObjectId;
+    restoredAt?: Date;
+
+    createdBy?: Types.ObjectId;
+    createdAt?: Date;
+    friends?: Types.ObjectId[];
+
+    freezedBy?: Types.ObjectId;
     freezedAt?: Date;
+
+    updatedAt?: Date;
     _plainOtp?: string;
 }
 
@@ -78,10 +88,18 @@ const UserSchema = new Schema<IUser>(
             enum: providerEnum,
             default: providerEnum.SYSTEM,
         },
+        freezedBy: { type: Schema.Types.ObjectId },
         freezedAt: Date,
+
+        restoredBy: { type: Schema.Types.ObjectId },
+        restoredAt: Date,
+
+        createdBy: { type: Schema.Types.ObjectId },
+        friends: [{ type: Schema.Types.ObjectId, ref: "User" }],
 
         _plainOtp: { type: String },
         profileImage: { type: String },
+        tempProfileImage: { type: String },
         coverImage: [String],
     },
     {
@@ -124,7 +142,7 @@ UserSchema.post("save", async function (doc, next) {
 
 UserSchema.pre(["find", "findOne"], async function (next) {
     const query = this.getQuery();
-    console.log({ query: query });
+    // console.log({ query: query });
     if (query.paranoid === false) {
         this.setQuery({ ...query });
     } else {

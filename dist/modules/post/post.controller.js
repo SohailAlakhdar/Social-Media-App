@@ -32,17 +32,18 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const router = (0, express_1.Router)();
-const post_service_1 = __importDefault(require("./post.service"));
+const post_service_1 = require("./post.service");
 const validators = __importStar(require("./post.validtions"));
 const validation_middleware_1 = require("../../middlewares/validation.middleware");
 const cloud_multer_1 = require("../../utils/multer/cloud.multer");
 const authentication_middlewares_1 = require("../../middlewares/authentication.middlewares");
-router.post("/createPost", (0, cloud_multer_1.cloudFileUpload)({ validation: cloud_multer_1.fileValidation.image }).array("attachments", 2), (0, validation_middleware_1.validation)(validators.createPost), post_service_1.default.createPost);
-router.post("/:likePost", (0, authentication_middlewares_1.authentication)(), (0, validation_middleware_1.validation)(validators.likePost), post_service_1.default.createPost);
+const comment_1 = require("../comment");
+router.use("/:postId/comment", comment_1.commentRouter);
+router.post("/create-post", (0, authentication_middlewares_1.authentication)(), (0, cloud_multer_1.cloudFileUpload)({ validation: cloud_multer_1.fileValidation.image }).array("attachments", 2), (0, validation_middleware_1.validation)(validators.createPost), post_service_1.postService.createPost);
+router.patch("/:postId/like", (0, authentication_middlewares_1.authentication)(), (0, validation_middleware_1.validation)(validators.likePost), post_service_1.postService.likePost);
+router.patch("/:postId", (0, authentication_middlewares_1.authentication)(), (0, cloud_multer_1.cloudFileUpload)({ validation: cloud_multer_1.fileValidation.image }).array("attachments", 2), (0, validation_middleware_1.validation)(validators.updatePost), post_service_1.postService.updatePost);
+router.get("/", (0, authentication_middlewares_1.authentication)(), (0, validation_middleware_1.validation)(validators.listPost), post_service_1.postService.listPost);
 exports.default = router;
