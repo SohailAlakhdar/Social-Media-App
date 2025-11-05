@@ -4,7 +4,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.bootstrap = void 0;
-const s3_config_1 = require("./utils/multer/s3.config");
 const path_1 = require("path");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config({ path: (0, path_1.resolve)("./config/.env.environment") });
@@ -15,14 +14,14 @@ const express_rate_limit_1 = require("express-rate-limit");
 const modules_1 = require("./modules");
 const node_util_1 = require("node:util");
 const node_stream_1 = require("node:stream");
-const createS3WriteStreamPipe = (0, node_util_1.promisify)(node_stream_1.pipeline);
 const error_response_1 = require("./utils/response/error.response");
 const connection_db_1 = require("./DB/connection.db");
+const createS3WriteStreamPipe = (0, node_util_1.promisify)(node_stream_1.pipeline);
+const s3_config_1 = require("./utils/multer/s3.config");
 const s3_config_2 = require("./utils/multer/s3.config");
 const success_response_1 = require("./utils/response/success.response");
 const gateway_1 = require("./modules/gateway/gateway");
 const chat_1 = require("./modules/chat");
-const graphql_1 = require("graphql");
 const express_2 = require("graphql-http/lib/use/express");
 const limiter = (0, express_rate_limit_1.rateLimit)({
     windowMs: 15 * 60 * 1000,
@@ -37,26 +36,8 @@ const bootstrap = async () => {
     app.use((0, cors_1.default)());
     app.use((0, helmet_1.default)());
     app.use(limiter);
-    const schema = new graphql_1.GraphQLSchema({
-        query: new graphql_1.GraphQLObjectType({
-            name: "RootSchemaQueryType",
-            description: "Optional TExt",
-            fields: {
-                Welcome: {
-                    type: graphql_1.GraphQLString,
-                    description: "this schema to say hello for you!!",
-                    resolve: (parent, args) => {
-                        return "Hello World";
-                    },
-                },
-            },
-        }),
-    });
-    app.all("/graphql", (0, express_2.createHandler)({ schema }));
+    app.all("/graphql", (0, express_2.createHandler)({ schema: modules_1.schema }));
     await (0, connection_db_1.connectDB)();
-    app.get("/", (req, res) => {
-        res.send("Hello World! , SOCIAL APP 😊");
-    });
     app.get("/test", async (req, res) => {
         const { Key } = req.query;
         const result = await (0, s3_config_1.deleteFile)({
@@ -104,6 +85,9 @@ const bootstrap = async () => {
         }
         return (0, success_response_1.successResponse)({ res, data: { result } });
     });
+    app.get("/", (req, res) => {
+        res.send("Hello World! , this is my project ::: SOCIAL MEDIA APP 😊");
+    });
     app.use("/auth", modules_1.authRouter);
     app.use("/user", modules_1.userRouter);
     app.use("/post", modules_1.postRouter);
@@ -115,7 +99,6 @@ const bootstrap = async () => {
     const httpServer = app.listen(port, () => {
         console.log(`Server is running on http://localhost:${port} 🚀`);
     });
-    console.log({ schema });
     (0, gateway_1.initializeIo)(httpServer);
 };
 exports.bootstrap = bootstrap;

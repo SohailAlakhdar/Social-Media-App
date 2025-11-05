@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.commentRouter = exports.postRouter = exports.userRouter = exports.authRouter = void 0;
+exports.schema = exports.commentRouter = exports.postRouter = exports.userRouter = exports.authRouter = void 0;
 var auth_1 = require("./auth/");
 Object.defineProperty(exports, "authRouter", { enumerable: true, get: function () { return auth_1.authRouter; } });
 var user_1 = require("./user/");
@@ -9,3 +9,5 @@ var post_1 = require("./post/");
 Object.defineProperty(exports, "postRouter", { enumerable: true, get: function () { return post_1.postRouter; } });
 var comment_1 = require("./comment/");
 Object.defineProperty(exports, "commentRouter", { enumerable: true, get: function () { return comment_1.commentRouter; } });
+var graphql_1 = require("./graphql");
+Object.defineProperty(exports, "schema", { enumerable: true, get: function () { return graphql_1.schema; } });

@@ -1,4 +1,3 @@
-import { deleteFile, deleteFiles, getFile } from "./utils/multer/s3.config";
 // Setup ENV
 import { resolve } from "path";
 import dotenv from "dotenv";
@@ -14,28 +13,25 @@ import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 
 //  module routing
-import { authRouter, userRouter, postRouter } from "./modules";
+import { authRouter,  userRouter, postRouter, schema } from "./modules";
 //
 import { promisify } from "node:util";
 import { pipeline } from "node:stream";
-const createS3WriteStreamPipe = promisify(pipeline);
 //
-import {
-    BadRequestException,
-    globalErrorHandling,
-} from "./utils/response/error.response";
+import { BadRequestException, globalErrorHandling } from "./utils/response/error.response";
+// DB
 import { connectDB } from "./DB/connection.db";
+
+const createS3WriteStreamPipe = promisify(pipeline);
+import { deleteFile, deleteFiles, getFile } from "./utils/multer/s3.config";
 import { createGetPreSignedLink } from "./utils/multer/s3.config";
 import { successResponse } from "./utils/response/success.response";
 import { DeleteObjectsCommandOutput } from "@aws-sdk/client-s3";
+// Socket.io
 import { initializeIo } from "./modules/gateway/gateway";
 import { chatRoter } from "./modules/chat";
-import {
-    graphql,
-    GraphQLSchema,
-    GraphQLObjectType,
-    GraphQLString,
-} from "graphql";
+
+// GrphQL
 import { createHandler } from "graphql-http/lib/use/express";
 
 // handle base rate limiting
@@ -59,29 +55,10 @@ const bootstrap = async (): Promise<void> => {
     app.use(limiter); // Rate Limiting
 
     // GraphQL
-    const schema = new GraphQLSchema({
-        query: new GraphQLObjectType({
-            name: "RootSchemaQueryType", // tracing error and unique identifier
-            description: "Optional TExt",
-            fields: {
-                Welcome: {
-                    type: GraphQLString,
-                    description: "this schema to say hello for you!!",
-                    resolve: (parent: unknown, args: any) => {
-                        return "Hello World";
-                    },
-                },
-            },
-        }),
-    });
-    app.all("/graphql", createHandler({ schema }));
+    app.all("/graphql", createHandler({ schema: schema }));
 
     // DB
     await connectDB();
-    // app routing
-    app.get("/", (req: Request, res: Response) => {
-        res.send("Hello World! , SOCIAL APP 😊");
-    });
 
     // AWS
     // Delet-File
@@ -165,6 +142,10 @@ const bootstrap = async (): Promise<void> => {
         }
     );
 
+    // app routing
+    app.get("/", (req: Request, res: Response) => {
+        res.send("Hello World! , this is my project ::: SOCIAL MEDIA APP 😊");
+    });
     app.use("/auth", authRouter);
     app.use("/user", userRouter);
     app.use("/post", postRouter);
@@ -180,8 +161,6 @@ const bootstrap = async (): Promise<void> => {
     const httpServer = app.listen(port, () => {
         console.log(`Server is running on http://localhost:${port} 🚀`);
     });
-
-    console.log({ schema });
 
     initializeIo(httpServer);
 };
