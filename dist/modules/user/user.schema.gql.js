@@ -1,122 +1,73 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GraphQLOneUserResponse = exports.GenderEnumType = void 0;
-const graphql_1 = require("graphql");
-const DB_1 = require("../../DB");
-const types_gql_1 = require("../graphql/types.gql");
-exports.GenderEnumType = new graphql_1.GraphQLEnumType({
-    name: "GraphQLGenderEnum",
-    values: {
-        male: { value: "male" },
-        female: { value: "female" },
-    },
-});
-exports.GraphQLOneUserResponse = new graphql_1.GraphQLObjectType({
-    name: "OneUserResponse",
-    fields: {
-        id: { type: graphql_1.GraphQLID },
-        name: {
-            type: new graphql_1.GraphQLNonNull(graphql_1.GraphQLString),
-        },
-        email: {
-            type: new graphql_1.GraphQLNonNull(graphql_1.GraphQLString),
-        },
-        gender: { type: new graphql_1.GraphQLNonNull(exports.GenderEnumType) },
-        followers: { type: new graphql_1.GraphQLList(graphql_1.GraphQLID) },
-    },
-});
-let users = [
-    {
-        id: 1,
-        name: "sohail",
-        email: "sohail@gmail.com",
-        gender: DB_1.GenderEnum.male,
-        password: "555789",
-        followers: [],
-    },
-    {
-        id: 2,
-        name: "Ibrahim",
-        email: "Ibrahim@gmail.com",
-        gender: DB_1.GenderEnum.male,
-        password: "555789",
-        followers: [],
-    },
-    {
-        id: 3,
-        name: "Sara",
-        email: "Sara@gmail.com",
-        gender: DB_1.GenderEnum.female,
-        password: "457892",
-        followers: [],
-    },
-    {
-        id: 4,
-        name: "Adel",
-        email: "Adel@gmail.com",
-        gender: DB_1.GenderEnum.male,
-        password: "555789",
-        followers: [],
-    },
-];
+const user_resolver_1 = require("./user.resolver");
+const GQLTypes = __importStar(require("./user.types.gql"));
+const GQLArgs = __importStar(require("./user.args.gql"));
 class UserGQLSchema {
+    userResolver = new user_resolver_1.UserResolver();
     constructor() { }
     registerQuery = () => {
         return {
             Welcome: {
-                type: new graphql_1.GraphQLNonNull(graphql_1.GraphQLString),
+                type: GQLTypes.welcome,
                 description: "this schema to say hello for you!!",
-                resolve: (parent, args) => {
-                    return "Hello World";
-                },
+                resolve: this.userResolver.welcome,
             },
             checkBoolean: {
-                type: new graphql_1.GraphQLNonNull(graphql_1.GraphQLBoolean),
-                resolve: (parent, args) => {
-                    return true;
-                },
+                type: GQLTypes.checkBoolean,
+                resolve: this.userResolver.checkBoolean,
             },
             allUsers: {
-                type: new graphql_1.GraphQLList(exports.GraphQLOneUserResponse),
-                resolve: (parent, args) => {
-                    return users.filter((ele) => ele.name === args.name && ele.gender === args.gender);
-                },
+                type: GQLTypes.allUsers,
+                args: GQLArgs.allUsers,
+                resolve: this.userResolver.allUsers,
             },
             searchUser: {
-                type: (0, types_gql_1.GraphQLUniformResopnse)({
-                    name: "searchUser",
-                    data: exports.GraphQLOneUserResponse,
-                }),
-                resolve: (parent, args) => {
-                    const user = users.find((ele) => ele.email === args.email);
-                    console.log({ user });
-                    if (!user) {
-                        throw new graphql_1.GraphQLError("User not found", {
-                            extensions: { statusCode: 400 },
-                        });
-                    }
-                    return {
-                        message: "Done",
-                        statusCode: 200,
-                        data: user,
-                    };
-                },
+                type: GQLTypes.searchUser,
+                args: GQLArgs.searchUser,
+                resolve: this.userResolver.searchUser,
             },
         };
     };
     registerMutation = () => {
         return {
             addFollower: {
-                type: new graphql_1.GraphQLList(exports.GraphQLOneUserResponse),
-                resolve: (parent, args) => {
-                    users = users.map((ele) => {
-                        if (ele.id === args.friendId) {
-                            ele.followers.push(args.userId);
-                        }
-                        return ele;
-                    });
-                    return users;
-                },
+                type: GQLTypes.addFollower,
+                args: GQLArgs.addFollower,
+                resolve: this.userResolver.addFollower,
             },
         };
     };

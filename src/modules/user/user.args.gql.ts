@@ -1,5 +1,5 @@
 import { GraphQLInt, GraphQLNonNull, GraphQLString } from "graphql";
-import { GenderEnumType } from "./user.schema.gql";
+import { GenderEnumType } from "./user.types.gql";
 
 // --------------------------
 // QUERY

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserService = void 0;
+exports.UserService = exports.users = void 0;
 const FriendRequest_model_1 = require("./../../DB/model/FriendRequest.model");
 const mongoose_1 = require("mongoose");
 const token_security_1 = require("../../utils/security/token.security");
@@ -16,6 +16,40 @@ const Post_model_1 = require("../../DB/model/Post.model");
 const friendRequest_repository_1 = require("../../DB/repository/friendRequest.repository");
 const DB_1 = require("../../DB");
 const Chat_model_1 = require("../../DB/model/Chat.model");
+exports.users = [
+    {
+        id: 1,
+        name: "sohail",
+        email: "sohail@gmail.com",
+        gender: User_model_1.GenderEnum.male,
+        password: "555789",
+        followers: [],
+    },
+    {
+        id: 2,
+        name: "Ibrahim",
+        email: "Ibrahim@gmail.com",
+        gender: User_model_1.GenderEnum.male,
+        password: "555789",
+        followers: [],
+    },
+    {
+        id: 3,
+        name: "Sara",
+        email: "Sara@gmail.com",
+        gender: User_model_1.GenderEnum.female,
+        password: "457892",
+        followers: [],
+    },
+    {
+        id: 4,
+        name: "Adel",
+        email: "Adel@gmail.com",
+        gender: User_model_1.GenderEnum.male,
+        password: "555789",
+        followers: [],
+    },
+];
 class UserService {
     userModel = new user_repository_1.UserRepository(User_model_1.UserModel);
     postModel = new post_repository_1.PostRepository(Post_model_1.PostModel);
@@ -292,6 +326,21 @@ class UserService {
             message: "Done",
             data: { credentials },
         });
+    };
+    welcome = () => {
+        return "Hello GraphQL";
+    };
+    allUsers = (parent, args) => {
+        return exports.users.filter((ele) => ele.name === args.name && ele.gender === args.gender);
+    };
+    addFollower = (args) => {
+        exports.users = exports.users.map((ele) => {
+            if (ele.id === args.friendId) {
+                ele.followers.push(args.userId);
+            }
+            return ele;
+        });
+        return exports.users;
     };
 }
 exports.UserService = UserService;

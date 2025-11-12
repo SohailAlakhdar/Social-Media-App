@@ -1,3 +1,4 @@
+import { GraphQLInt } from "graphql";
 import { FriendRequestModel } from "./../../DB/model/FriendRequest.model";
 import { Request, Response } from "express";
 import {
@@ -14,8 +15,8 @@ import {
 } from "../../utils/security/token.security";
 import { UserRepository } from "../../DB/repository/user.repository";
 import {
+    GenderEnum,
     HUserDocument,
-    IUser,
     RoleEnum,
     UserModel,
 } from "../../DB/model/User.model";
@@ -44,6 +45,52 @@ import { PostModel } from "../../DB/model/Post.model";
 import { FriendRequestRepository } from "../../DB/repository/friendRequest.repository";
 import { ChatRepository } from "../../DB";
 import { ChatModel } from "../../DB/model/Chat.model";
+
+// GraphQL
+import * as GQLArgs from "./user.args.gql";
+interface IUser {
+    id: number;
+    name: string;
+    email: string;
+    gender: GenderEnum;
+    password: string;
+    followers: number[];
+}
+
+export let users: IUser[] = [
+    {
+        id: 1,
+        name: "sohail",
+        email: "sohail@gmail.com",
+        gender: GenderEnum.male,
+        password: "555789",
+        followers: [],
+    },
+    {
+        id: 2,
+        name: "Ibrahim",
+        email: "Ibrahim@gmail.com",
+        gender: GenderEnum.male,
+        password: "555789",
+        followers: [],
+    },
+    {
+        id: 3,
+        name: "Sara",
+        email: "Sara@gmail.com",
+        gender: GenderEnum.female,
+        password: "457892",
+        followers: [],
+    },
+    {
+        id: 4,
+        name: "Adel",
+        email: "Adel@gmail.com",
+        gender: GenderEnum.male,
+        password: "555789",
+        followers: [],
+    },
+];
 
 export class UserService {
     private userModel: UserRepository = new UserRepository(UserModel);
@@ -259,7 +306,7 @@ export class UserService {
                 participants: { $in: req.user?._id },
                 group: { $exists: true },
             },
-        }) ;
+        });
         if (!groups) {
             throw new NotFoundException("fail to found groups");
         }
@@ -441,6 +488,28 @@ export class UserService {
             message: "Done",
             data: { credentials },
         });
+    };
+
+    // GRAPHQL===================================
+    welcome = (): string => {
+        return "Hello GraphQL";
+    };
+    allUsers = (
+        parent: unknown,
+        args: { name: string; gender: GenderEnum }
+    ) => {
+        return users.filter(
+            (ele) => ele.name === args.name && ele.gender === args.gender
+        );
+    };
+    addFollower = (args: { userId: number; friendId: number }) => {
+        users = users.map((ele: IUser) => {
+            if (ele.id === args.friendId) {
+                ele.followers.push(args.userId);
+            }
+            return ele;
+        });
+        return users;
     };
 }
 

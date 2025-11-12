@@ -4,7 +4,6 @@ import {
     GraphQLOutputType,
     GraphQLString,
 } from "graphql";
-import { GraphQLOneUserResponse } from "../user/user.schema.gql";
 
 export const GraphQLUniformResopnse = ({
     name,
@@ -14,10 +13,10 @@ export const GraphQLUniformResopnse = ({
     data: GraphQLOutputType;
 }): GraphQLOutputType =>
     new GraphQLObjectType({
-        name: "searchUser",
+        name,
         fields: {
             message: { type: GraphQLString },
             statusCode: { type: GraphQLInt },
-            data: { type: GraphQLOneUserResponse },
+            data: { type: data },
         },
     });

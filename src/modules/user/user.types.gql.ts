@@ -1,13 +1,36 @@
 import {
     GraphQLBoolean,
+    GraphQLEnumType,
+    GraphQLID,
     GraphQLList,
     GraphQLNonNull,
+    GraphQLObjectType,
     GraphQLString,
 } from "graphql";
-import {  GraphQLUniformResopnse } from "../graphql/types.gql";
-import { GraphQLOneUserResponse } from "./user.schema.gql";
+import { GraphQLUniformResopnse } from "../graphql/types.gql";
 
+export const GenderEnumType = new GraphQLEnumType({
+    name: "GraphQLGenderEnum",
+    values: {
+        male: { value: "male" },
+        female: { value: "female" },
+    },
+});
 
+export const GraphQLOneUserResponse = new GraphQLObjectType({
+    name: "OneUserResponse",
+    fields: {
+        id: { type: GraphQLID },
+        name: {
+            type: new GraphQLNonNull(GraphQLString),
+        },
+        email: {
+            type: new GraphQLNonNull(GraphQLString),
+        },
+        gender: { type: new GraphQLNonNull(GenderEnumType) },
+        followers: { type: new GraphQLList(GraphQLID) },
+    },
+});
 // ---------------------------
 
 // // QUERY
@@ -19,5 +42,5 @@ export const searchUser = GraphQLUniformResopnse({
     data: GraphQLOneUserResponse,
 });
 
-// // MUTATION
+// MUTATION
 export const addFollower = new GraphQLList(GraphQLOneUserResponse);
