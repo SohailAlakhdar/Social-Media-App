@@ -13,12 +13,15 @@ import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 
 //  module routing
-import { authRouter,  userRouter, postRouter, schema } from "./modules";
+import { authRouter, userRouter, postRouter, schema } from "./modules";
 //
 import { promisify } from "node:util";
 import { pipeline } from "node:stream";
 //
-import { BadRequestException, globalErrorHandling } from "./utils/response/error.response";
+import {
+    BadRequestException,
+    globalErrorHandling,
+} from "./utils/response/error.response";
 // DB
 import { connectDB } from "./DB/connection.db";
 
@@ -33,6 +36,7 @@ import { chatRoter } from "./modules/chat";
 
 // GrphQL
 import { createHandler } from "graphql-http/lib/use/express";
+import { authentication } from "./middlewares/authentication.middlewares";
 
 // handle base rate limiting
 const limiter = rateLimit({
@@ -55,7 +59,16 @@ const bootstrap = async (): Promise<void> => {
     app.use(limiter); // Rate Limiting
 
     // GraphQL
-    app.all("/graphql", createHandler({ schema: schema }));
+    app.all(
+        "/graphql",
+        authentication(),
+        createHandler({
+            schema: schema,
+            context: (req) => ({
+                user: req.raw.user,
+            }),
+        })
+    );
 
     // DB
     await connectDB();

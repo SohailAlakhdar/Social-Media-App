@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generalFields = exports.validation = void 0;
+exports.generalFields = exports.graphValidation = exports.validation = void 0;
 const zod_1 = require("zod");
 const error_response_1 = require("../utils/response/error.response");
 const mongoose_1 = require("mongoose");
 const User_model_1 = require("../DB/model/User.model");
+const graphql_1 = require("graphql");
 const validation = (schema) => (req, res, next) => {
     const validationErrors = [];
     for (const key of Object.keys(schema)) {
@@ -35,6 +36,24 @@ const validation = (schema) => (req, res, next) => {
     return next();
 };
 exports.validation = validation;
+const graphValidation = async (schema, args) => {
+    const validationResult = await schema.safeParseAsync(args);
+    if (!validationResult.success) {
+        const ZErrors = validationResult.error;
+        throw new graphql_1.GraphQLError("Validation ERror", {
+            extensions: {
+                statusCode: 400,
+                issue: {
+                    key: "args",
+                    issues: ZErrors.issues.map((issue) => {
+                        return { path: issue.path, message: issue.message };
+                    }),
+                },
+            },
+        });
+    }
+};
+exports.graphValidation = graphValidation;
 exports.generalFields = {
     id: zod_1.z.string().refine((val) => mongoose_1.Types.ObjectId.isValid(val), {
         message: "Invalid id format",

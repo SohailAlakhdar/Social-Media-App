@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const user_resolver_1 = require("./user.resolver");
 const GQLTypes = __importStar(require("./user.types.gql"));
 const GQLArgs = __importStar(require("./user.args.gql"));
+const graphql_1 = require("graphql");
 class UserGQLSchema {
     userResolver = new user_resolver_1.UserResolver();
     constructor() { }
@@ -43,6 +44,7 @@ class UserGQLSchema {
         return {
             Welcome: {
                 type: GQLTypes.welcome,
+                args: { name: { type: new graphql_1.GraphQLNonNull(graphql_1.GraphQLString) } },
                 description: "this schema to say hello for you!!",
                 resolve: this.userResolver.welcome,
             },

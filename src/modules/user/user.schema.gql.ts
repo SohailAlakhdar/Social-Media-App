@@ -1,6 +1,7 @@
 import { UserResolver } from "./user.resolver";
 import * as GQLTypes from "./user.types.gql";
 import * as GQLArgs from "./user.args.gql";
+import { GraphQLNonNull, GraphQLString } from "graphql";
 
 // ==========================================================
 class UserGQLSchema {
@@ -10,6 +11,7 @@ class UserGQLSchema {
         return {
             Welcome: {
                 type: GQLTypes.welcome,
+                args: { name: { type: new GraphQLNonNull(GraphQLString) } },
                 description: "this schema to say hello for you!!",
                 resolve: this.userResolver.welcome,
             },

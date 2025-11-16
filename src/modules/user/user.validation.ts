@@ -66,3 +66,8 @@ export const acceptFriendRequest = {
         }),
     }),
 };
+
+// GraphQL---------------------------------------
+export const welcome = z.strictObject({
+    name: z.string().min(2),
+});

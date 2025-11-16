@@ -491,8 +491,8 @@ export class UserService {
     };
 
     // GRAPHQL===================================
-    welcome = (): string => {
-        return "Hello GraphQL";
+    welcome = (user: HUserDocument): string => {
+        return `Hello ${user.firstName} for GraphQL`;
     };
     allUsers = (
         parent: unknown,

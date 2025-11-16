@@ -327,8 +327,8 @@ class UserService {
             data: { credentials },
         });
     };
-    welcome = () => {
-        return "Hello GraphQL";
+    welcome = (user) => {
+        return `Hello ${user.firstName} for GraphQL`;
     };
     allUsers = (parent, args) => {
         return exports.users.filter((ele) => ele.name === args.name && ele.gender === args.gender);

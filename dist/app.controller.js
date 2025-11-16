@@ -23,6 +23,7 @@ const success_response_1 = require("./utils/response/success.response");
 const gateway_1 = require("./modules/gateway/gateway");
 const chat_1 = require("./modules/chat");
 const express_2 = require("graphql-http/lib/use/express");
+const authentication_middlewares_1 = require("./middlewares/authentication.middlewares");
 const limiter = (0, express_rate_limit_1.rateLimit)({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -36,7 +37,12 @@ const bootstrap = async () => {
     app.use((0, cors_1.default)());
     app.use((0, helmet_1.default)());
     app.use(limiter);
-    app.all("/graphql", (0, express_2.createHandler)({ schema: modules_1.schema }));
+    app.all("/graphql", (0, authentication_middlewares_1.authentication)(), (0, express_2.createHandler)({
+        schema: modules_1.schema,
+        context: (req) => ({
+            user: req.raw.user,
+        }),
+    }));
     await (0, connection_db_1.connectDB)();
     app.get("/test", async (req, res) => {
         const { Key } = req.query;

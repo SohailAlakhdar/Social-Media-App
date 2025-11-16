@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.acceptFriendRequest = exports.sendFriendRequest = exports.changeRole = exports.restoreAccount = exports.hardDeleteAccount = exports.freezeAccount = exports.LogoutSchema = void 0;
+exports.welcome = exports.acceptFriendRequest = exports.sendFriendRequest = exports.changeRole = exports.restoreAccount = exports.hardDeleteAccount = exports.freezeAccount = exports.LogoutSchema = void 0;
 const zod_1 = require("zod");
 const token_security_1 = require("../../utils/security/token.security");
 const mongoose_1 = require("mongoose");
@@ -68,3 +68,6 @@ exports.acceptFriendRequest = {
         }),
     }),
 };
+exports.welcome = zod_1.z.strictObject({
+    name: zod_1.z.string().min(2),
+});

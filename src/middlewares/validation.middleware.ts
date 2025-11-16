@@ -5,6 +5,7 @@ import type { ZodError, ZodType } from "zod";
 import { BadRequestException } from "../utils/response/error.response";
 import { Types } from "mongoose";
 import { RoleEnum } from "../DB/model/User.model";
+import { GraphQLError } from "graphql";
 
 type KeyReqType = keyof Request; // | "body"| "params"| "query"| "headers"
 type SchemaType = Partial<Record<KeyReqType, ZodType>>; // Record<key, ZodType>
@@ -46,6 +47,27 @@ export const validation =
         }
         return next() as unknown as NextFunction;
     };
+
+// ------------------------------
+export const graphValidation = async <T = any>(schema: ZodType, args: T) => {
+    const validationResult = await schema.safeParseAsync(args);
+    if (!validationResult.success) {
+        const ZErrors = validationResult.error as ZodError;
+        throw new GraphQLError("Validation ERror", {
+            extensions: {
+                statusCode: 400,
+                issue: {
+                    key: "args",
+                    issues: ZErrors.issues.map((issue) => {
+                        return { path: issue.path, message: issue.message };
+                    }),
+                },
+            },
+        });
+    }
+};
+
+
 
 export const generalFields = {
     id: z.string().refine((val) => Types.ObjectId.isValid(val), {

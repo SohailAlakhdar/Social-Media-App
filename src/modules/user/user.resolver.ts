@@ -1,15 +1,25 @@
 import { GraphQLError } from "graphql";
-import { GenderEnum } from "../../DB";
+import { GenderEnum, HUserDocument } from "../../DB";
 import { users, UserService } from "./user.service";
-
+import { graphAuthorization } from "../../middlewares/authentication.middlewares";
+import { endPoint } from "./user.endPoints";
+import { graphValidation } from "../../middlewares/validation.middleware";
+import * as validators from "./user.validation";
 // USER-RESOLVER
 export class UserResolver {
     private userService: UserService = new UserService();
     constructor() {}
 
     // QUERY
-    welcome = (parent: unknown, args: any): string => {
-        return this.userService.welcome();
+    welcome = async (
+        parent: unknown,
+        args: any,
+        context: { user: HUserDocument }
+    ): Promise<string> => {
+        await graphValidation<{ name: string }>(validators.welcome, args);
+        // authorization
+        await graphAuthorization(endPoint.welcome, context.user.role);
+        return this.userService.welcome(context.user);
     };
     checkBoolean = (parent: unknown, args: any): boolean => {
         return true;
