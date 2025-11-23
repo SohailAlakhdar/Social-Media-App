@@ -1,4 +1,3 @@
-import { GraphQLInt } from "graphql";
 import { FriendRequestModel } from "./../../DB/model/FriendRequest.model";
 import { Request, Response } from "express";
 import {
@@ -494,13 +493,14 @@ export class UserService {
     welcome = (user: HUserDocument): string => {
         return `Hello ${user.firstName} for GraphQL`;
     };
-    allUsers = (
+    allUsers = async (
         parent: unknown,
-        args: { name: string; gender: GenderEnum }
-    ) => {
-        return users.filter(
-            (ele) => ele.name === args.name && ele.gender === args.gender
-        );
+        args: { gender: GenderEnum },
+        authUser: HUserDocument
+    ): Promise<HUserDocument[]> => {
+        return await this.userModel.find({
+            filter: { _id: { $ne: authUser._id }, gender: args.gender },
+        });
     };
     addFollower = (args: { userId: number; friendId: number }) => {
         users = users.map((ele: IUser) => {

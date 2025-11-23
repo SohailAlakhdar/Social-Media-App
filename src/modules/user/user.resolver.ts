@@ -1,3 +1,4 @@
+import { IAuthGraph } from "./../graphql/schema.interface.gpl";
 import { GraphQLError } from "graphql";
 import { GenderEnum, HUserDocument } from "../../DB";
 import { users, UserService } from "./user.service";
@@ -24,11 +25,13 @@ export class UserResolver {
     checkBoolean = (parent: unknown, args: any): boolean => {
         return true;
     };
-    allUsers = (
+    allUsers = async (
         parent: unknown,
-        args: { name: string; gender: GenderEnum }
-    ) => {
-        return this.userService.allUsers(parent, args);
+        args: { gender: GenderEnum },
+        context: { user: HUserDocument }
+    ): Promise<HUserDocument[]> => {
+        console.log({ context });
+        return await this.userService.allUsers(parent, args, context.user);
     };
     searchUser = (parent: unknown, args: { email: string }) => {
         const user = users.find((ele) => ele.email === args.email);

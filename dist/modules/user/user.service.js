@@ -330,8 +330,10 @@ class UserService {
     welcome = (user) => {
         return `Hello ${user.firstName} for GraphQL`;
     };
-    allUsers = (parent, args) => {
-        return exports.users.filter((ele) => ele.name === args.name && ele.gender === args.gender);
+    allUsers = async (parent, args, authUser) => {
+        return await this.userModel.find({
+            filter: { _id: { $ne: authUser._id }, gender: args.gender },
+        });
     };
     addFollower = (args) => {
         exports.users = exports.users.map((ele) => {

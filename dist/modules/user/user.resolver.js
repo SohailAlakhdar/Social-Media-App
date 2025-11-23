@@ -51,8 +51,9 @@ class UserResolver {
     checkBoolean = (parent, args) => {
         return true;
     };
-    allUsers = (parent, args) => {
-        return this.userService.allUsers(parent, args);
+    allUsers = async (parent, args, context) => {
+        console.log({ context });
+        return await this.userService.allUsers(parent, args, context.user);
     };
     searchUser = (parent, args) => {
         const user = user_service_1.users.find((ele) => ele.email === args.email);

@@ -1,4 +1,4 @@
-import { UserModel } from "./../../DB/model/User.model";
+import { HUserDocument, UserModel } from "./../../DB/model/User.model";
 import { Request, Response } from "express";
 import { UserRepository } from "../../DB/repository/user.repository";
 import {
@@ -41,20 +41,21 @@ import { connectedSocket, getIo } from "../gateway/gateway";
 //     return false;
 // }
 
-export const postAvailability = (req: Request) => {
+export const postAvailability = (user: HUserDocument) => {
     return [
         { availability: AvailabilityEnum.public },
+        { availability: AvailabilityEnum.onlyMe, createdBy: user?._id },
         {
             availability: AvailabilityEnum.onlyMe,
-            createdBy: req.user?._id,
+            createdBy: { $in: [...(user?.friends || []), user?._id] },
         },
         {
             availability: AvailabilityEnum.friends,
-            createdBy: { $in: req.user?.friends || [] },
+            createdBy: { $in: user?.friends || [] },
         },
         {
             availability: { $ne: AvailabilityEnum.onlyMe },
-            tags: req.user?._id,
+            tags: { $in: user?._id },
         },
     ];
 };
@@ -119,7 +120,7 @@ export class PostService {
         const post = await this.postModel.findOneAndUpdate({
             filter: {
                 _id: postId,
-                $or: postAvailability(req),
+                $or: postAvailability(req.user as HUserDocument),
             },
             update: updateData,
         });
@@ -249,7 +250,7 @@ export class PostService {
         }
         const posts = await this.postModel.paginate({
             filter: {
-                $or: postAvailability(req),
+                $or: postAvailability(req.user as HUserDocument),
             },
             options: {
                 populate: [
@@ -284,6 +285,70 @@ export class PostService {
             throw new BadRequestException("not found this post");
         }
         return successResponse({ res, data: { posts } });
+    };
+
+    // GraphQl==============================
+    allPosts = async (
+        parent: unknown,
+        args: { page: number; size: number },
+        authUser: HUserDocument
+    ): Promise<{
+        docs?: HPostDocument[];
+        totalDocs?: number;
+        totalPages?: number;
+        page?: number;
+        size?: number;
+    }> => {
+        {
+            let page = args.page;
+            let size = args.size;
+            if (page < 1) {
+                page = 1;
+            }
+            if (size < 1 || size > 100) {
+                size = 5;
+            }
+            const posts = await this.postModel.paginate({
+                filter: {
+                    $or: postAvailability(authUser),
+                },
+                options: {
+                    populate: [
+                        {
+                            path: "comments",
+                            match: {
+                                freezedAt: { $exists: false },
+                                commentId: { $exists: false },
+                            },
+                            populate: [
+                                {
+                                    path: "replies",
+                                    match: { freezedAt: { $exists: false } },
+                                    populate: [
+                                        {
+                                            path: "replies",
+                                            match: {
+                                                freezedAt: { $exists: false },
+                                            },
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                        {
+                            path: "createdBy",
+                        },
+                    ],
+                },
+                page,
+                size,
+            });
+            console.log(posts);
+            if (!posts) {
+                throw new BadRequestException("not found this post");
+            }
+            return posts;
+        }
     };
 }
 export const postService = new PostService();

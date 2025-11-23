@@ -13,20 +13,21 @@ const mongoose_1 = require("mongoose");
 const repository_1 = require("../../DB/repository");
 const model_1 = require("../../DB/model");
 const gateway_1 = require("../gateway/gateway");
-const postAvailability = (req) => {
+const postAvailability = (user) => {
     return [
         { availability: Post_model_1.AvailabilityEnum.public },
+        { availability: Post_model_1.AvailabilityEnum.onlyMe, createdBy: user?._id },
         {
             availability: Post_model_1.AvailabilityEnum.onlyMe,
-            createdBy: req.user?._id,
+            createdBy: { $in: [...(user?.friends || []), user?._id] },
         },
         {
             availability: Post_model_1.AvailabilityEnum.friends,
-            createdBy: { $in: req.user?.friends || [] },
+            createdBy: { $in: user?.friends || [] },
         },
         {
             availability: { $ne: Post_model_1.AvailabilityEnum.onlyMe },
-            tags: req.user?._id,
+            tags: { $in: user?._id },
         },
     ];
 };
@@ -82,7 +83,7 @@ class PostService {
         const post = await this.postModel.findOneAndUpdate({
             filter: {
                 _id: postId,
-                $or: (0, exports.postAvailability)(req),
+                $or: (0, exports.postAvailability)(req.user),
             },
             update: updateData,
         });
@@ -190,7 +191,7 @@ class PostService {
         }
         const posts = await this.postModel.paginate({
             filter: {
-                $or: (0, exports.postAvailability)(req),
+                $or: (0, exports.postAvailability)(req.user),
             },
             options: {
                 populate: [
@@ -225,6 +226,58 @@ class PostService {
             throw new error_response_1.BadRequestException("not found this post");
         }
         return (0, success_response_1.successResponse)({ res, data: { posts } });
+    };
+    allPosts = async (parent, args, authUser) => {
+        {
+            let page = args.page;
+            let size = args.size;
+            if (page < 1) {
+                page = 1;
+            }
+            if (size < 1 || size > 100) {
+                size = 5;
+            }
+            const posts = await this.postModel.paginate({
+                filter: {
+                    $or: (0, exports.postAvailability)(authUser),
+                },
+                options: {
+                    populate: [
+                        {
+                            path: "comments",
+                            match: {
+                                freezedAt: { $exists: false },
+                                commentId: { $exists: false },
+                            },
+                            populate: [
+                                {
+                                    path: "replies",
+                                    match: { freezedAt: { $exists: false } },
+                                    populate: [
+                                        {
+                                            path: "replies",
+                                            match: {
+                                                freezedAt: { $exists: false },
+                                            },
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                        {
+                            path: "createdBy",
+                        },
+                    ],
+                },
+                page,
+                size,
+            });
+            console.log(posts);
+            if (!posts) {
+                throw new error_response_1.BadRequestException("not found this post");
+            }
+            return posts;
+        }
     };
 }
 exports.PostService = PostService;

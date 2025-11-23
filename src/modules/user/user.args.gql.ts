@@ -1,11 +1,10 @@
 import { GraphQLInt, GraphQLNonNull, GraphQLString } from "graphql";
-import { GenderEnumType } from "./user.types.gql";
+import { GraphGenderEnum } from "./user.types.gql";
 
 // --------------------------
 // QUERY
 export const allUsers = {
-    name: { type: new GraphQLNonNull(GraphQLString) },
-    gender: { type: GenderEnumType },
+    gender: { type: GraphGenderEnum },
 };
 
 export const searchUser = {
