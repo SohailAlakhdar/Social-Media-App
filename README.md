@@ -54,7 +54,3 @@ The project is built using **Node.js**, **Express**, **MongoDB**, and follows mo
 - Sequelize   
 - MySQL / SQL  
 - TypeScript 
-
-
-## 📁 Project Structure
-
